@@ -1,0 +1,118 @@
+// Student Vault Database Schema
+// This schema models the existing Student Vault data for backend persistence
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TopicStatus {
+  learning
+  reviewing
+  ready
+}
+
+enum AttendanceRecordStatus {
+  present
+  absent
+}
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique // Clerk user ID
+  email         String    @unique
+  name          String    @db.VarChar(40)
+  passwordHash  String?   // Nullable for OAuth-only accounts
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastSyncedAt  DateTime? // Last successful sync timestamp
+
+  profile       Profile?
+  topics        Topic[]
+  attendanceSubjects AttendanceSubject[]
+  resources     Resource[]
+
+  @@map("users")
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(40)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model Topic {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     String       @db.VarChar(40)
+  title       String       @db.VarChar(80)
+  examDate    DateTime?
+  notes       String       @db.Text
+  status      TopicStatus  @default(learning)
+  checklist   Json         // { understand: bool, practice: bool, revise: bool }
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  resources   Resource[]
+
+  @@index([userId])
+  @@index([subject])
+  @@index([examDate])
+  @@map("topics")
+}
+
+model AttendanceSubject {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String            @db.VarChar(40)
+  target    Int               @default(75)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  records   AttendanceRecord[]
+
+  @@index([userId])
+  @@unique([userId, name])
+  @@map("attendance_subjects")
+}
+
+model AttendanceRecord {
+  id                  String                @id @default(cuid())
+  attendanceSubjectId String
+  attendanceSubject   AttendanceSubject     @relation(fields: [attendanceSubjectId], references: [id], onDelete: Cascade)
+  record              AttendanceRecordStatus
+  createdAt           DateTime              @default(now())
+
+  @@index([attendanceSubjectId])
+  @@map("attendance_records")
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId     String
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  name        String
+  mimeType    String   // application/pdf, image/*
+  size        BigInt
+  data        String?  @db.Text // Base64 data URL (for local storage fallback)
+  r2Key       String?  // R2/S3 object key (when using cloud storage)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([topicId])
+  @@map("resources")
+}

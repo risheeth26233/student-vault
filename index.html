@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#177068">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.clerk.dev; style-src 'self'; img-src 'self' data: https:; connect-src 'self' https://api.clerk.dev https://cdn.clerk.dev; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="clerk-publishable-key" content="">
+  <title>Student Vault</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="assets/icon-192.svg">
+  <link rel="apple-touch-icon" href="assets/icon-192.svg">
+</head>
+<body>
+  <a href="#top" class="skip-link">Skip to main content</a>
+  <header class="topbar">
+    <button id="brandButton" class="brand" type="button" aria-label="Student Vault home">
+      <span class="brand-mark" aria-hidden="true">S</span>
+      <span>Student Vault</span>
+    </button>
+    <nav id="mainNav" class="main-nav" aria-label="Main navigation" hidden>
+      <button type="button" data-view="vault">My vault</button>
+      <button type="button" data-view="attendance">Attendance</button>
+      <button type="button" data-view="youtube">YouTube</button>
+      <button type="button" data-view="search">Search</button>
+      <button type="button" data-view="ai">AI Assistant</button>
+      <button type="button" data-view="images">Images</button>
+      <button type="button" data-view="sync">Sync</button>
+    </nav>
+    <div class="topbar-right">
+      <p id="today" class="today"></p>
+      <div id="profileMenu" class="profile-menu" hidden>
+        <span id="studentName"></span>
+        <button id="syncButton" type="button" class="outline-button" title="Sync with cloud">☁ Sync</button>
+        <button id="exportButton" type="button" class="outline-button">Export backup</button>
+        <label class="import-label">
+          <span>Import backup</span>
+          <input id="importInput" type="file" accept=".json" hidden>
+        </label>
+        <button id="signOutButton" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top" class="app-shell">
+    <!-- Welcome / Login View -->
+    <section id="welcomeView" class="app-view welcome-view" aria-labelledby="welcome-title">
+      <div class="welcome-grid">
+        <div class="welcome-copy">
+          <p class="eyebrow">Student workspace</p>
+          <h1 id="welcome-title">Prepare with a plan.</h1>
+          <p class="welcome-message">Organize your subjects, study resources, and exam revision in one focused place.</p>
+          <figure class="study-visual">
+            <img src="assets/study-desk.png" alt="Notebook, book, tablet, and study materials on a desk">
+          </figure>
+        </div>
+
+        <section class="login-panel" aria-labelledby="login-title">
+          <p class="eyebrow">Your profile</p>
+          <h2 id="login-title">Set up your vault</h2>
+          <form id="loginForm" class="login-form" novalidate>
+            <label for="loginName">
+              <span>Your name</span>
+              <input id="loginName" type="text" maxlength="40" autocomplete="name" placeholder="Aarav" required aria-required="true">
+            </label>
+            <label for="loginEmail">
+              <span>Email (optional)</span>
+              <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com">
+            </label>
+            <button type="submit">Continue to vault</button>
+          </form>
+          <p id="loginMessage" class="form-message" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <section class="attendance-shortcut" aria-labelledby="attendance-shortcut-title">
+        <div>
+          <p class="eyebrow">Quick tool</p>
+          <h2 id="attendance-shortcut-title">Attendance calculator</h2>
+          <p>Mark each subject present or absent. No login needed.</p>
+        </div>
+        <button id="openAttendanceButton" class="outline-button" type="button">Open calculator</button>
+      </section>
+    </section>
+
+    <!-- Vault View (Topics) -->
+    <section id="vaultView" class="app-view" aria-labelledby="vault-title" hidden>
+      <section class="overview-band" aria-labelledby="vault-title">
+        <div class="overview-copy">
+          <p class="eyebrow">Exam preparation</p>
+          <h1 id="vault-title">Study by topic.</h1>
+          <p id="focusMessage" class="focus-message">Your next topic starts here.</p>
+          <dl class="overview-stats">
+            <div>
+              <dt>Topics</dt>
+              <dd id="topicCount">0</dd>
+            </div>
+            <div>
+              <dt>Ready</dt>
+              <dd id="readyCount">0</dd>
+            </div>
+            <div>
+              <dt>Resources</dt>
+              <dd id="resourceCount">0</dd>
+            </div>
+          </dl>
+        </div>
+        <figure class="study-visual vault-visual">
+          <img src="assets/study-desk.png" alt="Notebook, book, tablet, and study materials on a desk">
+        </figure>
+      </section>
+
+      <section class="topic-composer" aria-labelledby="create-topic-title">
+        <div>
+          <p class="eyebrow">Plan a session</p>
+          <h2 id="create-topic-title">Create a topic</h2>
+        </div>
+        <form id="topicForm" class="topic-form" novalidate>
+          <label for="subjectInput">
+            <span>Subject</span>
+            <input id="subjectInput" name="subject" type="text" maxlength="40" placeholder="Biology" autocomplete="off" required aria-required="true">
+          </label>
+          <label for="topicInput">
+            <span>Topic</span>
+            <input id="topicInput" name="topic" type="text" maxlength="80" placeholder="Cell division" autocomplete="off" required aria-required="true">
+          </label>
+          <label for="examDateInput">
+            <span>Exam date</span>
+            <input id="examDateInput" name="examDate" type="date">
+          </label>
+          <button type="submit">Create topic</button>
+        </form>
+        <p id="notice" class="notice" aria-live="polite"></p>
+      </section>
+
+      <section class="library" aria-labelledby="library-title">
+        <div class="library-heading">
+          <div>
+            <p class="eyebrow">Study library</p>
+            <h2 id="library-title">Topics</h2>
+          </div>
+          <div class="library-filters">
+            <label class="search-field">
+              <span class="sr-only">Search topics</span>
+              <input id="searchInput" type="search" placeholder="Search topics">
+            </label>
+            <label class="select-field">
+              <span class="sr-only">Filter by subject</span>
+              <select id="subjectFilter">
+                <option value="all">All subjects</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 3v12m0 0l4-4m-4 4l-4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p>No study topics yet. Create your first topic to get started.</p>
+        </div>
+        <div id="topicList" class="topic-list" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <!-- Attendance View -->
+    <section id="attendanceView" class="app-view attendance-view" aria-labelledby="attendance-title" hidden>
+      <div class="attendance-heading">
+        <div>
+          <p class="eyebrow">Quick tool</p>
+          <h1 id="attendance-title">Attendance calculator</h1>
+          <p id="attendanceMessage" class="focus-message">Add a subject, then mark every class.</p>
+        </div>
+        <button class="outline-button" type="button" data-view="vault">Go to my vault</button>
+      </div>
+
+      <section class="attendance-summary" aria-label="Overall attendance summary">
+        <div>
+          <p class="summary-label">Overall attendance</p>
+          <p id="overallAttendance" class="attendance-percentage">--</p>
+        </div>
+        <dl class="attendance-stats">
+          <div><dt>Present</dt><dd id="attendancePresent">0</dd></div>
+          <div><dt>Absent</dt><dd id="attendanceAbsent">0</dd></div>
+          <div><dt>Classes</dt><dd id="attendanceClasses">0</dd></div>
+        </dl>
+      </section>
+
+      <section class="attendance-composer" aria-labelledby="add-attendance-title">
+        <div>
+          <p class="eyebrow">Subjects</p>
+          <h2 id="add-attendance-title">Add a subject</h2>
+        </div>
+        <form id="attendanceForm" class="attendance-form" novalidate>
+          <label for="attendanceSubjectInput">
+            <span>Subject</span>
+            <input id="attendanceSubjectInput" type="text" maxlength="40" placeholder="Mathematics" autocomplete="off" required aria-required="true">
+          </label>
+          <label for="attendanceGoalInput">
+            <span>Attendance goal</span>
+            <input id="attendanceGoalInput" type="number" min="1" max="100" value="75" inputmode="numeric" required aria-required="true">
+          </label>
+          <button type="submit">Add subject</button>
+        </form>
+        <p id="attendanceNotice" class="notice" aria-live="polite"></p>
+      </section>
+
+      <section class="attendance-records" aria-labelledby="attendance-records-title">
+        <div class="library-heading">
+          <div>
+            <p class="eyebrow">Daily record</p>
+            <h2 id="attendance-records-title">My subjects</h2>
+          </div>
+        </div>
+        <div id="attendanceEmpty" class="empty-state">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p>No attendance subjects yet. Add a subject to start tracking.</p>
+        </div>
+        <div id="attendanceList" class="attendance-list" aria-live="polite" role="list"></div>
+      </section>
+    </section>
+
+    <!-- YouTube View -->
+    <section id="youtubeView" class="app-view" aria-labelledby="youtube-title" hidden>
+      <div class="youtube-heading">
+        <div>
+          <p class="eyebrow">Learn from videos</p>
+          <h1 id="youtube-title">YouTube Search</h1>
+          <p id="youtubeMessage" class="focus-message">Search for educational videos to supplement your studies.</        </div>
+        <div id="youtubeStatus" class="service-status" hidden></div>
+      </div>
+
+      <section class="youtube-search" aria-labelledby="youtube-search-title">
+        <div>
+          <p class="eyebrow">Search</p>
+          <h2 id="youtube-search-title">Find videos</h2>
+        </div>
+        <form id="youtubeSearchForm" class="youtube-search-form" novalidate>
+          <label for="youtubeSearchInput">
+            <span>Search query</span>
+            <input id="youtubeSearchInput" type="text" placeholder="e.g., calculus derivatives" required aria-required="true">
+          </label>
+          <div class="search-options">
+            <label for="youtubeMaxResults">
+              <span>Max results</span>
+              <input id="youtubeMaxResults" type="number" min="1" max="50" value="10">
+            </label>
+            <label for="youtubeOrder">
+              <span>Order</span>
+              <select id="youtubeOrder">
+                <option value="relevance">Relevance</option>
+                <option value="date">Date</option>
+                <option value="rating">Rating</option>
+                <option value="viewCount">View count</option>
+                <option value="title">Title</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit" id="youtubeSearchBtn">
+            <span class="btn-text">Search</span>
+            <span class="btn-loading" hidden>Searching...</span>
+          </button>
+        </form>
+        <p id="youtubeNotice" class="notice" aria-live="polite"></p>
+      </section>
+
+      <section class="youtube-results" aria-labelledby="youtube-results-title">
+        <div class="library-heading">
+          <div>
+            <p class="eyebrow">Results</p>
+            <h2 id="youtube-results-title">Videos</h2>
+          </div>
+        </div>
+        <div id="youtubeEmpty" class="empty-state">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p>Search for videos to see results here.</p>
+        </div>
+        <div id="youtubeList" class="youtube-list" aria-live="polite" role="list"></div>
+      </section>
+    </section>
+
+    <!-- Search View -->
+    <section id="searchView" class="app-view" aria-labelledby="search-title" hidden>
+      <div class="search-heading">
+        <div>
+          <p class="eyebrow">Web search</p>
+          <h1 id="search-title">Web Search</h1>
+          <p id="searchMessage" class="focus-message">Search the web for educational resources.</        </div>
+        <div id="searchStatus" class="service-status" hidden></div>
+      </div>
+
+      <section class="search-form-section" aria-labelledby="search-form-title">
+        <div>
+          <p class="eyebrow">Search</p>
+          <h2 id="search-form-title">Find resources</h2>
+        </div>
+        <form id="searchForm" class="search-form" novalidate>
+          <label for="webSearchInput">
+            <span>Search query</span>
+            <input id="webSearchInput" type="text" placeholder="e.g., photosynthesis explanation" required aria-required="true">
+          </label>
+          <div class="search-options">
+            <label for="searchMaxResults">
+              <span>Max results</span>
+              <input id="searchMaxResults" type="number" min="1" max="50" value="10">
+            </label>
+            <label for="searchSafeSearch">
+              <span>Safe search</span>
+              <select id="searchSafeSearch">
+                <option value="moderate">Moderate</option>
+                <option value="off">Off</option>
+                <option value="strict">Strict</option>
+              </select>
+            </label>
+            <label for="searchFreshness">
+              <span>Freshness</span>
+              <select id="searchFreshness">
+                <option value="">Any time</option>
+                <option value="day">Past day</option>
+                <option value="week">Past week</option>
+                <option value="month">Past month</option>
+                <option value="year">Past year</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit" id="searchBtn">
+            <span class="btn-text">Search</span>
+            <span class="btn-loading" hidden>Searching...</span>
+          </button>
+        </form>
+        <p id="searchNotice" class="notice" aria-live="polite"></p>
+      </section>>
+
+      <section class="search-results" aria-labelledby="search-results-title">
+        <div class="library-heading">
+          <div>
+            <p class="eyebrow">Results</p>
+            <h2 id="search-results-title">Web results</h2>
+          </div>
+        </div>
+        <div id="searchEmpty" class="empty-state">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 21l-4.35-4.35" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p>Search the web to see results here.</p>
+        </div>
+        <div id="searchList" class="search-list" aria-live="polite" role="list"></div>
+      </section>
+    </section>
+
+    <!-- AI Assistant View -->
+    <section id="aiView" class="app-view" aria-labelledby="ai-title" hidden>
+      <div class="ai-heading">
+        <div>
+          <p class="eyebrow">AI Assistant</p>
+          <h1 id="ai-title">AI Chat</h1>
+          <p id="aiMessage" class="focus-message">Ask questions, get explanations, or brainstorm ideas.
+          </div>
+        <div id="aiStatus" class="service-status" hidden></div>
+      </div>
+
+      <section class="ai-chat" aria-labelledby="ai-chat-title">
+        <div class="ai-chat-header">
+          <h2 id="ai-chat-title">Conversation</h2>
+          <div class="ai-provider-select">
+            <label for="aiProvider">Provider:</label>
+            <select id="aiProvider">
+              <option value="">Auto</option>
+            </select>
+          </div>
+        </div>
+        <div id="aiChatMessages" class="ai-chat-messages" aria-live="polite" role="list"></div>
+        <form id="aiChatForm" class="ai-chat-form" novalidate>
+          <textarea id="aiChatInput" placeholder="Ask me anything about your studies..." rows="3" required aria-required="true" aria-label="Your message"></textarea>
+          <div class="ai-chat-options">
+            <label for="aiStreamToggle">
+              <input type="checkbox" id="aiStreamToggle"> Stream response
+            </label>
+            <button type="submit" id="aiChatBtn">
+              <span class="btn-text">Send</span>
+              <span class="btn-loading" hidden>Sending...</span>
+            </button>
+          </div>
+        </form>
+        <p id="aiNotice" class="notice" aria-live="polite"></p>
+      </section>
+    </section>
+
+    <!-- Images View -->
+    <section id="imagesView" class="app-view" aria-labelledby="images-title" hidden>
+      <div class="images-heading">
+        <div>
+          <p class="eyebrow">Generate diagrams</p>
+          <h1 id="images-title">Image Generation</h1>
+          <p id="imagesMessage" class="focus-message">Create educational diagrams and illustrations for your topics.
+          </div>
+        <div id="imagesStatus" class="service-status" hidden></div>
+      </div>
+
+      <section class="images-generator" aria-labelledby="images-generator-title">
+        <div>
+          <p class="eyebrow">Create</p>
+          <h2 id="images-generator-title">Generate an image</h2>
+        </div>
+        <form id="imagesForm" class="images-form" novalidate>
+          <label for="imagesPrompt">
+            <span>Prompt</span>
+            <textarea id="imagesPrompt" placeholder="A clear diagram of a plant cell with labeled organelles, educational style" rows="3" required aria-required="true"></textarea>
+          </label>
+          <label for="imagesNegativePrompt">
+            <span>Negative prompt (optional)</span>
+            <input id="imagesNegativePrompt" type="text" placeholder="blurry, low quality, watermark">
+          </label>
+          <div class="images-options">
+            <label for="imagesWidth">
+              <span>Width</span>
+              <input id="imagesWidth" type="number" min="64" max="1024" value="512" step="64">
+            </label>
+            <label for="imagesHeight">
+              <span>Height</span>
+              <input id="imagesHeight" type="number" min="64" max="1024" value="512" step="64">
+            </label>
+            <label for="imagesSteps">
+              <span>Steps</span>
+              <input id="imagesSteps" type="number" min="1" max="100" value="20">
+            </label>
+            <label for="imagesGuidanceScale">
+              <span>Guidance scale</span>
+              <input id="imagesGuidanceScale" type="number" min="1" max="20" value="7.5" step="0.5">
+            </label>
+            <label for="imagesFormat">
+              <span>Format</span>
+              <select id="imagesFormat">
+                <option value="png">PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="webp">WebP</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit" id="imagesGenerateBtn">
+            <span class="btn-text">Generate</span>
+            <span class="btn-loading" hidden>Generating...</span>
+          </button>
+        </form>
+        <p id="imagesNotice" class="notice" aria-live="polite"></p>
+      </section>
+
+      <section class="images-results" aria-labelledby="images-results-title">
+        <div class="library-heading">
+          <div>
+            <p class="eyebrow">Generated</p>
+            <h2 id="images-results-title">Images</h2>
+          </div>
+        </div>
+        <div id="imagesEmpty" class="empty-state">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="8.5" cy="8.5" r="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="21 15 16 10 5 21" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p>Generate images to see them here.</p>
+        </div>
+        <div id="imagesList" class="images-list" aria-live="polite" role="list"></div>
+      </section>
+    </section>
+
+    <!-- Sync View -->
+    <section id="syncView" class="app-view" aria-labelledby="sync-title" hidden>
+      <div class="sync-heading">
+        <div>
+          <p class="eyebrow">Cloud sync</p>
+          <h1 id="sync-title">Cloud Sync</h1>
+          <p id="syncMessage" class="focus-message">Keep your data synchronized across devices.
+          </div>
+        <div id="syncStatus" class="service-status" hidden></div>
+      </div>
+
+      <section class="sync-status-section" aria-labelledby="sync-status-title">
+        <div>
+          <p class="eyebrow">Status</p>
+          <h2 id="sync-status-title">Sync Status</h2>
+        </div>
+        <div id="syncStatusInfo" class="sync-status-info">
+          <div class="status-item">
+            <span class="status-label">Last synced</span>
+            <span id="syncLastSynced" class="status-value">Never</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Server version</span>
+            <span id="syncServerVersion" class="status-value">--</span>
+          </div>
+        </div>
+        <div class="sync-actions">
+          <button id="syncPullButton" type="button" class="primary-button">
+            <span class="btn-text">Pull from cloud</span>
+            <span class="btn-loading" hidden>Pulling...</span>
+          </button>
+          <button id="syncPushButton" type="button" class="primary-button">
+            <span class="btn-text">Push to cloud</span>
+            <span class="btn-loading" hidden>Pushing...</span>
+          </button>
+        </div>
+        <p id="syncNotice" class="notice" aria-live="polite"></p>
+      </section>
+
+      <section class="sync-conflicts" aria-labelledby="sync-conflicts-title" hidden>
+        <div class="library-heading">
+          <div>
+            <p class="eyebrow">Conflicts</p>
+            <h2 id="sync-conflicts-title">Conflicts to resolve</h2>
+          </div>
+        </div>
+        <div id="syncConflictsList" class="sync-conflicts-list" role="list"></div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Toast container for notifications -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Clerk script will be loaded dynamically -->
+  <script type="module" src="api.js"></script>
+  <script type="module" src="script.js"></script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.log('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
