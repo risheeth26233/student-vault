@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { prisma } from "../utils/prisma.js";
 import { getEnv } from "../config/env.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 const env = getEnv();
 
@@ -22,13 +22,13 @@ const clerkWebhookEventZod = z.object({
   }),
 });
 
-const clerkWebhookEventSchema = zodToJsonSchema(clerkWebhookEventZod);
+const clerkWebhookEventSchema = toJsonSchema(clerkWebhookEventZod);
 
 const webhookResponseZod = z.object({ received: z.literal(true) });
-const webhookResponseSchema = zodToJsonSchema(webhookResponseZod);
+const webhookResponseSchema = toJsonSchema(webhookResponseZod);
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
 
 export async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/webhooks/clerk - Handle Clerk webhook events

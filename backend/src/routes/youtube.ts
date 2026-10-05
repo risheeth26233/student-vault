@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { youtubeService, type YouTubeSearchOptions } from "../services/youtube.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 const searchSchemaZod = z.object({
   query: z.string().min(1).max(500),
@@ -13,7 +13,7 @@ const searchSchemaZod = z.object({
   safeSearch: z.enum(["none", "moderate", "strict"]).optional().default("moderate"),
 });
 
-const searchSchema = zodToJsonSchema(searchSchemaZod);
+const searchSchema = toJsonSchema(searchSchemaZod);
 
 const videoZod = z.object({
   id: z.string(),
@@ -28,7 +28,7 @@ const videoZod = z.object({
 });
 
 const videoParamsZod = z.object({ id: z.string() });
-const videoParamsSchema = zodToJsonSchema(videoParamsZod);
+const videoParamsSchema = toJsonSchema(videoParamsZod);
 
 const searchResponseZod = z.object({
   videos: z.array(videoZod),
@@ -36,16 +36,16 @@ const searchResponseZod = z.object({
   totalResults: z.number(),
 });
 
-const searchResponseSchema = zodToJsonSchema(searchResponseZod);
+const searchResponseSchema = toJsonSchema(searchResponseZod);
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
 
 const statusResponseZod = z.object({ configured: z.boolean() });
-const statusResponseSchema = zodToJsonSchema(statusResponseZod);
+const statusResponseSchema = toJsonSchema(statusResponseZod);
 
 const videoResponseZod = videoZod.nullable();
-const videoResponseSchema = zodToJsonSchema(videoResponseZod);
+const videoResponseSchema = toJsonSchema(videoResponseZod);
 
 export async function youtubeRoutes(app: FastifyInstance): Promise<void> {
   // Search videos

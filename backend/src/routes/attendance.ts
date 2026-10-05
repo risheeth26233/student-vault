@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { prisma } from "../utils/prisma.js";
 import { getDbUserId, type AuthenticatedRequest } from "../plugins/clerk-auth.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 const attendanceSubjectCreateZod = z.object({
   name: z.string().min(1).max(40),
@@ -47,13 +47,16 @@ const attendanceStatsZod = z.object({
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
 
-const attendanceSubjectCreateSchema = zodToJsonSchema(attendanceSubjectCreateZod);
-const attendanceSubjectUpdateSchema = zodToJsonSchema(attendanceSubjectUpdateZod);
-const attendanceRecordCreateSchema = zodToJsonSchema(attendanceRecordCreateZod);
-const attendanceSubjectResponseSchema = zodToJsonSchema(attendanceSubjectResponseZod);
-const attendanceSubjectsListResponseSchema = zodToJsonSchema(attendanceSubjectsListResponseZod);
-const attendanceStatsSchema = zodToJsonSchema(attendanceStatsZod);
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const attendanceSubjectCreateSchema = toJsonSchema(attendanceSubjectCreateZod);
+const attendanceSubjectUpdateSchema = toJsonSchema(attendanceSubjectUpdateZod);
+const attendanceRecordCreateSchema = toJsonSchema(attendanceRecordCreateZod);
+const attendanceSubjectResponseSchema = toJsonSchema(attendanceSubjectResponseZod);
+const attendanceSubjectsListResponseSchema = toJsonSchema(attendanceSubjectsListResponseZod);
+const attendanceStatsSchema = toJsonSchema(attendanceStatsZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
+
+const attendanceParamsZod = z.object({ id: z.string() });
+const attendanceParamsSchema = toJsonSchema(attendanceParamsZod);
 
 export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/attendance - List all attendance subjects with stats
@@ -171,7 +174,7 @@ export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Attendance"],
       summary: "Get an attendance subject by ID",
-      params: z.object({ id: z.string() }),
+      params: attendanceParamsSchema,
       response: {
         200: attendanceSubjectResponseSchema,
         400: errorResponseSchema,
@@ -201,7 +204,7 @@ export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Attendance"],
       summary: "Update an attendance subject",
-      params: z.object({ id: z.string() }),
+      params: attendanceParamsSchema,
       body: attendanceSubjectUpdateSchema,
       response: {
         200: attendanceSubjectResponseSchema,
@@ -250,7 +253,7 @@ export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Attendance"],
       summary: "Mark a class as present or absent",
-      params: z.object({ id: z.string() }),
+      params: attendanceParamsSchema,
       body: attendanceRecordCreateSchema,
       response: {
         201: attendanceSubjectResponseSchema,
@@ -291,7 +294,7 @@ export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Attendance"],
       summary: "Remove the last attendance record",
-      params: z.object({ id: z.string() }),
+      params: attendanceParamsSchema,
       response: {
         200: attendanceSubjectResponseSchema,
         400: errorResponseSchema,
@@ -334,8 +337,8 @@ export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Attendance"],
       summary: "Update attendance goal target",
-      params: z.object({ id: z.string() }),
-      body: z.object({ target: z.number().int().min(1).max(100) }),
+      params: attendanceParamsSchema,
+      body: toJsonSchema(z.object({ target: z.number().int().min(1).max(100) })),
       response: {
         200: attendanceSubjectResponseSchema,
         400: errorResponseSchema,
@@ -369,9 +372,9 @@ export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Attendance"],
       summary: "Delete an attendance subject and all its records",
-      params: z.object({ id: z.string() }),
+      params: attendanceParamsSchema,
       response: {
-        200: z.object({ success: z.literal(true) }),
+        200: toJsonSchema(z.object({ success: z.literal(true) })),
         400: errorResponseSchema,
         401: errorResponseSchema,
         404: errorResponseSchema,

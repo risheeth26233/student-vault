@@ -21,6 +21,26 @@ enum AttendanceRecordStatus {
   absent
 }
 
+enum AssignmentStatus {
+  pending
+  in_progress
+  completed
+}
+
+enum AssignmentPriority {
+  low
+  medium
+  high
+}
+
+enum AssessmentType {
+  quiz
+  test
+  exam
+  assignment
+  other
+}
+
 model User {
   id            String    @id @default(cuid())
   clerkId       String    @unique // Clerk user ID
@@ -36,6 +56,8 @@ model User {
   topics        Topic[]
   attendanceSubjects AttendanceSubject[]
   resources     Resource[]
+  assignments   Assignment[]
+  assessments   Assessment[]
 
   @@map("users")
 }
@@ -65,11 +87,60 @@ model Topic {
   updatedAt   DateTime     @updatedAt
 
   resources   Resource[]
+  assignments Assignment[]
+  assessments Assessment[]
 
   @@index([userId])
   @@index([subject])
   @@index([examDate])
   @@map("topics")
+}
+
+model Assignment {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String             @db.VarChar(120)
+  description String             @db.Text @default("")
+  subject     String             @db.VarChar(40)
+  topicId     String?
+  topic       Topic?             @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  dueDate     DateTime?
+  status      AssignmentStatus   @default(pending)
+  priority    AssignmentPriority @default(medium)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([subject])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([topicId])
+  @@map("assignments")
+}
+
+model Assessment {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String         @db.VarChar(120)
+  subject   String         @db.VarChar(40)
+  topicId   String?
+  topic     Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  type      AssessmentType @default(exam)
+  score     Int
+  maxScore  Int
+  date      DateTime
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([subject])
+  @@index([type])
+  @@index([date])
+  @@index([topicId])
+  @@map("assessments")
 }
 
 model AttendanceSubject {

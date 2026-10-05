@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { aiService, type AIChatOptions } from "../services/ai.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 const chatSchemaZod = z.object({
   messages: z.array(z.object({
@@ -14,7 +14,7 @@ const chatSchemaZod = z.object({
   stream: z.boolean().optional(),
 });
 
-const chatSchema = zodToJsonSchema(chatSchemaZod);
+const chatSchema = toJsonSchema(chatSchemaZod);
 
 const chatResponseZod = z.object({
   content: z.string(),
@@ -25,16 +25,16 @@ const chatResponseZod = z.object({
   }).optional(),
 });
 
-const chatResponseSchema = zodToJsonSchema(chatResponseZod);
+const chatResponseSchema = toJsonSchema(chatResponseZod);
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
 
 const providersResponseZod = z.object({
   providers: z.array(z.string()),
   default: z.string().nullable(),
 });
-const providersResponseSchema = zodToJsonSchema(providersResponseZod);
+const providersResponseSchema = toJsonSchema(providersResponseZod);
 
 export async function aiRoutes(app: FastifyInstance): Promise<void> {
   // Chat completion

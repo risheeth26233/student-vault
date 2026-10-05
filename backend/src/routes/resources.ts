@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { prisma } from "../utils/prisma.js";
 import { getDbUserId, type AuthenticatedRequest } from "../plugins/clerk-auth.js";
 import { isR2Configured, generateDownloadUrl, buildR2Key, deleteObject } from "../services/r2.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 const resourceResponseZod = z.object({
   id: z.string(),
@@ -25,9 +25,9 @@ const resourcesListResponseZod = z.object({
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
 
-const resourceResponseSchema = zodToJsonSchema(resourceResponseZod);
-const resourcesListResponseSchema = zodToJsonSchema(resourcesListResponseZod);
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const resourceResponseSchema = toJsonSchema(resourceResponseZod);
+const resourcesListResponseSchema = toJsonSchema(resourcesListResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
 
 // For file upload - supports both base64 and R2 key
 const resourceCreateZod = z.object({
@@ -39,19 +39,28 @@ const resourceCreateZod = z.object({
   r2Key: z.string().optional().nullable(), // R2 object key (when using R2)
 });
 
-const resourceCreateSchema = zodToJsonSchema(resourceCreateZod);
+const resourceCreateSchema = toJsonSchema(resourceCreateZod);
+
+const resourceParamsZod = z.object({ id: z.string() });
+const resourceParamsSchema = toJsonSchema(resourceParamsZod);
+
+const resourceTopicParamsZod = z.object({ topicId: z.string() });
+const resourceTopicParamsSchema = toJsonSchema(resourceTopicParamsZod);
 
 export async function resourcesRoutes(app: FastifyInstance): Promise<void> {
+  const resourcesQuerystringZod = z.object({
+    topicId: z.string().optional(),
+    limit: z.coerce.number().min(1).max(100).optional().default(50),
+    offset: z.coerce.number().min(0).optional().default(0),
+  });
+  const resourcesQuerystringSchema = toJsonSchema(resourcesQuerystringZod);
+
   // GET /api/resources - List all resources (optionally filtered by topicId)
   app.get("/api/resources", {
     schema: {
       tags: ["Resources"],
       summary: "List all resources for the user",
-      querystring: z.object({
-        topicId: z.string().optional(),
-        limit: z.coerce.number().min(1).max(100).optional().default(50),
-        offset: z.coerce.number().min(0).optional().default(0),
-      }),
+      querystring: resourcesQuerystringSchema,
       response: {
         200: resourcesListResponseSchema,
         401: errorResponseSchema,
@@ -103,7 +112,7 @@ export async function resourcesRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Resources"],
       summary: "Get a resource by ID",
-      params: z.object({ id: z.string() }),
+      params: resourceParamsSchema,
       response: {
         200: resourceResponseSchema,
         401: errorResponseSchema,
@@ -198,9 +207,9 @@ export async function resourcesRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Resources"],
       summary: "Delete a resource",
-      params: z.object({ id: z.string() }),
+      params: resourceParamsSchema,
       response: {
-        200: z.object({ success: z.literal(true) }),
+        200: toJsonSchema(z.object({ success: z.literal(true) })),
         401: errorResponseSchema,
         404: errorResponseSchema,
       },
@@ -230,9 +239,9 @@ export async function resourcesRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Resources"],
       summary: "Delete all resources for a topic",
-      params: z.object({ topicId: z.string() }),
+      params: resourceTopicParamsSchema,
       response: {
-        200: z.object({ success: z.literal(true), deletedCount: z.number() }),
+        200: toJsonSchema(z.object({ success: z.literal(true), deletedCount: z.number() })),
         401: errorResponseSchema,
       },
     },

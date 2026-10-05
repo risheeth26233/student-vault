@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { toJsonSchema } from "../utils/schema.js";
 
 const healthResponseZod = z.object({
   status: z.literal("ok"),
@@ -10,7 +10,7 @@ const healthResponseZod = z.object({
   environment: z.string(),
 });
 
-const healthResponseSchema = zodToJsonSchema(healthResponseZod);
+const healthResponseSchema = toJsonSchema(healthResponseZod);
 
 export async function healthRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/health", {

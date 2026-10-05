@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const emptyStringToUndefined = z.literal("").transform(() => undefined);
+
 const envSchema = z.object({
   // Server
   PORT: z.coerce.number().default(3000),
@@ -7,39 +9,39 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
 
   // AI Services
-  OPENAI_API_KEY: z.string().optional(),
-  ANTHROPIC_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional().or(emptyStringToUndefined),
+  ANTHROPIC_API_KEY: z.string().optional().or(emptyStringToUndefined),
 
   // YouTube
-  YOUTUBE_API_KEY: z.string().optional(),
+  YOUTUBE_API_KEY: z.string().optional().or(emptyStringToUndefined),
 
   // Web Search
-  BRAVE_SEARCH_API_KEY: z.string().optional(),
+  BRAVE_SEARCH_API_KEY: z.string().optional().or(emptyStringToUndefined),
 
   // Image Generation
-  FAL_API_KEY: z.string().optional(),
+  FAL_API_KEY: z.string().optional().or(emptyStringToUndefined),
 
   // Database
-  DATABASE_URL: z.string().url().optional(),
+  DATABASE_URL: z.string().url().optional().or(emptyStringToUndefined),
 
   // Cloudflare R2 / S3
-  R2_ACCOUNT_ID: z.string().optional(),
-  R2_ACCESS_KEY_ID: z.string().optional(),
-  R2_SECRET_ACCESS_KEY: z.string().optional(),
-  R2_BUCKET_NAME: z.string().optional(),
-  R2_PUBLIC_URL: z.string().url().optional(),
+  R2_ACCOUNT_ID: z.string().optional().or(emptyStringToUndefined),
+  R2_ACCESS_KEY_ID: z.string().optional().or(emptyStringToUndefined),
+  R2_SECRET_ACCESS_KEY: z.string().optional().or(emptyStringToUndefined),
+  R2_BUCKET_NAME: z.string().optional().or(emptyStringToUndefined),
+  R2_PUBLIC_URL: z.string().url().optional().or(emptyStringToUndefined),
 
   // Authentication (Clerk)
-  CLERK_PUBLISHABLE_KEY: z.string().optional(),
-  CLERK_SECRET_KEY: z.string().optional(),
-  CLERK_WEBHOOK_SECRET: z.string().optional(),
+  CLERK_PUBLISHABLE_KEY: z.string().optional().or(emptyStringToUndefined),
+  CLERK_SECRET_KEY: z.string().optional().or(emptyStringToUndefined),
+  CLERK_WEBHOOK_SECRET: z.string().optional().or(emptyStringToUndefined),
 
   // Email
-  EMAIL_API_KEY: z.string().optional(),
-  EMAIL_FROM_ADDRESS: z.string().email().optional(),
+  EMAIL_API_KEY: z.string().optional().or(emptyStringToUndefined),
+  EMAIL_FROM_ADDRESS: z.string().email().optional().or(emptyStringToUndefined),
 
   // Monitoring
-  SENTRY_DSN: z.string().url().optional(),
+  SENTRY_DSN: z.string().url().optional().or(emptyStringToUndefined),
 });
 
 export type Env = z.infer<typeof envSchema>;

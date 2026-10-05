@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { imageService, type ImageGenerationOptions } from "../services/images.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 const generateSchemaZod = z.object({
   prompt: z.string().min(1).max(2000),
@@ -15,7 +15,7 @@ const generateSchemaZod = z.object({
   format: z.enum(["png", "jpeg", "webp"]).optional().default("png"),
 });
 
-const generateSchema = zodToJsonSchema(generateSchemaZod);
+const generateSchema = toJsonSchema(generateSchemaZod);
 
 const generatedImageZod = z.object({
   url: z.string(),
@@ -30,13 +30,13 @@ const generateResponseZod = z.object({
   creditsUsed: z.number().optional(),
 });
 
-const generateResponseSchema = zodToJsonSchema(generateResponseZod);
+const generateResponseSchema = toJsonSchema(generateResponseZod);
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
 
 const statusResponseZod = z.object({ configured: z.boolean() });
-const statusResponseSchema = zodToJsonSchema(statusResponseZod);
+const statusResponseSchema = toJsonSchema(statusResponseZod);
 
 export async function imagesRoutes(app: FastifyInstance): Promise<void> {
   // Generate image

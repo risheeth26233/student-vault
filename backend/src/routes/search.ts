@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { searchService, type SearchOptions } from "../services/search.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 const searchSchemaZod = z.object({
   query: z.string().min(1).max(500),
@@ -11,7 +11,7 @@ const searchSchemaZod = z.object({
   language: z.string().optional(),
 });
 
-const searchSchema = zodToJsonSchema(searchSchemaZod);
+const searchSchema = toJsonSchema(searchSchemaZod);
 
 const searchResultZod = z.object({
   title: z.string(),
@@ -27,13 +27,13 @@ const searchResponseZod = z.object({
   totalResults: z.number(),
 });
 
-const searchResponseSchema = zodToJsonSchema(searchResponseZod);
+const searchResponseSchema = toJsonSchema(searchResponseZod);
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
 
 const statusResponseZod = z.object({ configured: z.boolean() });
-const statusResponseSchema = zodToJsonSchema(statusResponseZod);
+const statusResponseSchema = toJsonSchema(statusResponseZod);
 
 export async function searchRoutes(app: FastifyInstance): Promise<void> {
   // Web search

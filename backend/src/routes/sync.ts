@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { prisma } from "../utils/prisma.js";
 import { getDbUserId, type AuthenticatedRequest } from "../plugins/clerk-auth.js";
 import { isR2Configured, generateUploadUrl, generateDownloadUrl, buildR2Key, deleteObject, getR2PublicUrl } from "../services/r2.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 // Sync status response
 const syncStatusResponseZod = z.object({
@@ -12,7 +12,7 @@ const syncStatusResponseZod = z.object({
   hasLocalChanges: z.boolean().optional(),
 });
 
-const syncStatusResponseSchema = zodToJsonSchema(syncStatusResponseZod);
+const syncStatusResponseSchema = toJsonSchema(syncStatusResponseZod);
 
 // Pull response (server -> client)
 const pullTopicZod = z.object({
@@ -63,7 +63,7 @@ const pullResponseZod = z.object({
   serverVersion: z.number(),
 });
 
-const pullResponseSchema = zodToJsonSchema(pullResponseZod);
+const pullResponseSchema = toJsonSchema(pullResponseZod);
 
 // Push request (client -> server)
 const pushTopicZod = z.object({
@@ -117,7 +117,7 @@ const pushRequestZod = z.object({
   clientVersion: z.number().optional(), // client's last known server version
 });
 
-const pushRequestSchema = zodToJsonSchema(pushRequestZod);
+const pushRequestSchema = toJsonSchema(pushRequestZod);
 
 const pushResponseZod = z.object({
   success: z.boolean(),
@@ -142,7 +142,7 @@ const pushResponseZod = z.object({
   }).optional(),
 });
 
-const pushResponseSchema = zodToJsonSchema(pushResponseZod);
+const pushResponseSchema = toJsonSchema(pushResponseZod);
 
 // R2 upload URL response
 const r2UploadUrlResponseZod = z.object({
@@ -151,16 +151,16 @@ const r2UploadUrlResponseZod = z.object({
   publicUrl: z.string().nullable(),
 });
 
-const r2UploadUrlResponseSchema = zodToJsonSchema(r2UploadUrlResponseZod);
+const r2UploadUrlResponseSchema = toJsonSchema(r2UploadUrlResponseZod);
 
 const r2DownloadUrlResponseZod = z.object({
   downloadUrl: z.string(),
 });
 
-const r2DownloadUrlResponseSchema = zodToJsonSchema(r2DownloadUrlResponseZod);
+const r2DownloadUrlResponseSchema = toJsonSchema(r2DownloadUrlResponseZod);
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
 
 export async function syncRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/sync/status - Get sync status
@@ -573,15 +573,18 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // GET /api/sync/r2/upload-url - Get presigned upload URL for R2
+  const r2UploadUrlQuerystringZod = z.object({
+    resourceId: z.string(),
+    fileName: z.string(),
+    contentType: z.string(),
+  });
+  const r2UploadUrlQuerystringSchema = toJsonSchema(r2UploadUrlQuerystringZod);
+
   app.get("/api/sync/r2/upload-url", {
     schema: {
       tags: ["Sync", "R2"],
       summary: "Get presigned URL for uploading a file to R2",
-      querystring: z.object({
-        resourceId: z.string(),
-        fileName: z.string(),
-        contentType: z.string(),
-      }),
+      querystring: r2UploadUrlQuerystringSchema,
       response: {
         200: r2UploadUrlResponseSchema,
         401: errorResponseSchema,
@@ -609,11 +612,14 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // GET /api/sync/r2/download-url - Get presigned download URL for R2
+  const r2DownloadUrlQuerystringZod = z.object({ key: z.string() });
+  const r2DownloadUrlQuerystringSchema = toJsonSchema(r2DownloadUrlQuerystringZod);
+
   app.get("/api/sync/r2/download-url", {
     schema: {
       tags: ["Sync", "R2"],
       summary: "Get presigned URL for downloading a file from R2",
-      querystring: z.object({ key: z.string() }),
+      querystring: r2DownloadUrlQuerystringSchema,
       response: {
         200: r2DownloadUrlResponseSchema,
         401: errorResponseSchema,

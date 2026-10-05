@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { prisma } from "../utils/prisma.js";
 import { getDbUserId, type AuthenticatedRequest } from "../plugins/clerk-auth.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 const checklistZod = z.object({
   understand: z.boolean(),
@@ -48,25 +48,31 @@ const topicsListResponseZod = z.object({
 
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
 
-const topicCreateSchema = zodToJsonSchema(topicCreateZod);
-const topicUpdateSchema = zodToJsonSchema(topicUpdateZod);
-const topicResponseSchema = zodToJsonSchema(topicResponseZod);
-const topicsListResponseSchema = zodToJsonSchema(topicsListResponseZod);
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const topicCreateSchema = toJsonSchema(topicCreateZod);
+const topicUpdateSchema = toJsonSchema(topicUpdateZod);
+const topicResponseSchema = toJsonSchema(topicResponseZod);
+const topicsListResponseSchema = toJsonSchema(topicsListResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
+
+const topicParamsZod = z.object({ id: z.string() });
+const topicParamsSchema = toJsonSchema(topicParamsZod);
 
 export async function topicsRoutes(app: FastifyInstance): Promise<void> {
+  const topicsQuerystringZod = z.object({
+    subject: z.string().optional(),
+    status: z.enum(["learning", "reviewing", "ready"]).optional(),
+    search: z.string().optional(),
+    limit: z.coerce.number().min(1).max(100).optional().default(50),
+    offset: z.coerce.number().min(0).optional().default(0),
+  });
+  const topicsQuerystringSchema = toJsonSchema(topicsQuerystringZod);
+
   // GET /api/topics - List all topics for the authenticated user
   app.get("/api/topics", {
     schema: {
       tags: ["Topics"],
       summary: "List all topics",
-      querystring: z.object({
-        subject: z.string().optional(),
-        status: z.enum(["learning", "reviewing", "ready"]).optional(),
-        search: z.string().optional(),
-        limit: z.coerce.number().min(1).max(100).optional().default(50),
-        offset: z.coerce.number().min(0).optional().default(0),
-      }),
+      querystring: topicsQuerystringSchema,
       response: {
         200: topicsListResponseSchema,
         400: errorResponseSchema,
@@ -117,7 +123,7 @@ export async function topicsRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Topics"],
       summary: "Get a topic by ID",
-      params: z.object({ id: z.string() }),
+      params: topicParamsSchema,
       response: {
         200: topicResponseSchema,
         400: errorResponseSchema,
@@ -176,7 +182,7 @@ export async function topicsRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Topics"],
       summary: "Update a topic",
-      params: z.object({ id: z.string() }),
+      params: topicParamsSchema,
       body: topicUpdateSchema,
       response: {
         200: topicResponseSchema,
@@ -218,8 +224,8 @@ export async function topicsRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Topics"],
       summary: "Update topic checklist",
-      params: z.object({ id: z.string() }),
-      body: checklistZod,
+      params: topicParamsSchema,
+      body: toJsonSchema(checklistZod),
       response: {
         200: topicResponseSchema,
         400: errorResponseSchema,
@@ -252,9 +258,9 @@ export async function topicsRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Topics"],
       summary: "Delete a topic and its resources",
-      params: z.object({ id: z.string() }),
+      params: topicParamsSchema,
       response: {
-        200: z.object({ success: z.literal(true) }),
+        200: toJsonSchema(z.object({ success: z.literal(true) })),
         400: errorResponseSchema,
         401: errorResponseSchema,
         404: errorResponseSchema,

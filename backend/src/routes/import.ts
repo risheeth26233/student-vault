@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { prisma } from "../utils/prisma.js";
 import { getDbUserId, type AuthenticatedRequest } from "../plugins/clerk-auth.js";
+import { toJsonSchema } from "../utils/schema.js";
 
 // Backup v1 schema (matches frontend export format)
 const backupChecklistZod = z.object({
@@ -62,9 +62,11 @@ const importResponseZod = z.object({
   }).optional(),
 });
 
-const importResponseSchema = zodToJsonSchema(importResponseZod);
+const importResponseSchema = toJsonSchema(importResponseZod);
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
-const errorResponseSchema = zodToJsonSchema(errorResponseZod);
+const errorResponseSchema = toJsonSchema(errorResponseZod);
+
+const backupV1Schema = toJsonSchema(backupV1Zod);
 
 export async function importRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/import/v1 - Import Student Vault backup v1
@@ -72,7 +74,7 @@ export async function importRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ["Import"],
       summary: "Import Student Vault backup v1",
-      body: backupV1Zod,
+      body: backupV1Schema,
       response: {
         200: importResponseSchema,
         400: errorResponseSchema,
