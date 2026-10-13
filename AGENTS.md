@@ -1,5 +1,23 @@
 # Student-Vault × GuruGraph — AGENTS.md
 
+## Locked Roadmap (7 Phases)
+
+The project has exactly seven major phases. This roadmap is locked — do not add phases or subphases, and do not begin a phase until it is explicitly authorized.
+
+| # | Phase | Status |
+|---|-------|--------|
+| 1 | Student-Vault Foundation | ✅ COMPLETE |
+| 2 | GuruGraph Learning Intelligence | ✅ IMPLEMENTED (deterministic read-only foundation + Learning Insights UI) |
+| 3 | Adaptive & Handwritten Intelligence | ⬜ NOT STARTED |
+| 4 | Teacher Intelligence | ⬜ NOT STARTED |
+| 5 | Intervention & Student–Teacher Loop | ⬜ NOT STARTED |
+| 6 | AI Study & Academic Ecosystem | ⬜ NOT STARTED |
+| 7 | Production & Intelligence Maturity | ⬜ NOT STARTED |
+
+**Phase gate rule:** Phase 3+ functionality must not be implemented until explicitly authorized. Phase 2 is complete to the extent verified by the test/build/lint suites below.
+
+---
+
 ## Phase 1 Architectural Decision
 
 ### Feature Parity Matrix
@@ -83,19 +101,40 @@
 
 ---
 
-## GuruGraph Future Boundary (Phase 2+)
+## Phase 2 — GuruGraph Learning Intelligence (Implemented)
 
-**Architecture Preparation (do in Phase 1):**
+**What Phase 2 added (deterministic, read-only, explainable):**
+- Typed domain boundary: `frontend/src/gurugraph/domain/` (types, constants/thresholds, deterministic ids).
+- Signal normalization: `frontend/src/gurugraph/signals/normalize.ts` maps existing Student-Vault records (topics, assessments, assignments, attendance, resources) into normalized learning signals. Read-only — never writes back.
+- Deterministic mastery: `frontend/src/gurugraph/intelligence/mastery.ts` (weighted evidence average with an explicit `insufficient_evidence` state).
+- Gap classification: `frontend/src/gurugraph/intelligence/gaps.ts` (five distinguishable states; `confirmed_misconception` is reserved and never emitted).
+- Service + storage boundary: `frontend/src/gurugraph/service/` (localStorage-persisted, offline-friendly, never touches `sv_*` keys).
+- Student-Vault integration: `frontend/src/gurugraph/integration/useGuruGraphIntelligence.ts` — the ONLY bridge; subscribes to existing Phase 1 queries, read-only.
+- Learning Insights UI: route `/insights` (`frontend/src/pages/LearningInsightsPage.tsx` + `frontend/src/features/insights/`). Consumes the integration hook; adds no duplicate intelligence logic. Desktop sidebar + tablet drawer entry; mobile bottom nav stays five items. Loading/error/retry/offline states, honest insufficient-evidence handling, expandable "Why?" separating observed evidence from inferred/classified conclusions.
+
+**Phase 2 boundaries (deferred to later phases — do NOT implement here):**
+- Adaptive practice generation (Phase 3)
+- Handwriting analysis/diagnosis (Phase 3)
+- Teacher intelligence (Phase 4)
+- Student–teacher intervention workflows (Phase 5)
+- Advanced AI agents / knowledge-graph visualization (Phase 6+)
+
+**Testing:** see Commands Reference — `npm run test` runs both the GuruGraph unit tests and the Learning Insights view-model/component tests.
+
+---
+
+## GuruGraph Deferred Boundary (Phase 3+)
+
+**Architecture Preparation (done in Phase 1):**
 - `frontend/src/features/` structure for feature modules
 - `frontend/src/graph/` placeholder for knowledge graph components
 - `backend/src/services/graph/` placeholder for graph engine
 - Shared types in `frontend/src/types/gurugraph.ts` (empty for now)
 - Event bus for Coach orchestration (extend existing sync events)
 
-**DO NOT IMPLEMENT IN PHASE 1:**
-- Knowledge Graph intelligence
-- Mastery engine
-- Misconception engine
+**Still deferred beyond Phase 2 (not implemented):**
+- Full knowledge-graph intelligence / visualization
+- Misconception engine (a deterministic *candidate* gap state is reserved but never emitted in Phase 2)
 - Diagnostician / Examiner / Curator / Analyst agents
 - Coach orchestration
 - Adaptive practice
@@ -103,6 +142,8 @@
 - Teacher intelligence
 - Interventions
 - AI Study Assistant (beyond current chat)
+
+Note: the deterministic **mastery engine** and **gap classification** DID ship in Phase 2 (see the Phase 2 section above) — they are the read-only foundation, not the deferred intelligence.
 
 ---
 
@@ -125,6 +166,7 @@ cd frontend
 npm run dev          # Vite dev server (proxies /api to backend:3000)
 npm run build        # Production build
 npm run lint         # Oxlint
+npm run test         # Vitest (GuruGraph unit + Learning Insights UI tests)
 npm run preview      # Preview production build
 
 # Legacy (root)

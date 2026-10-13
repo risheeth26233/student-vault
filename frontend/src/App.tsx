@@ -16,6 +16,7 @@ import { DocumentsPage } from './pages/DocumentsPage';
 import { AttendancePage } from './pages/AttendancePage';
 import { AssignmentsPage } from './pages/AssignmentsPage';
 import { PerformancePage } from './pages/PerformancePage';
+import { LearningInsightsPage } from './pages/LearningInsightsPage';
 import { CalculatorPage } from './pages/CalculatorPage';
 import { StudyPage } from './pages/StudyPage';
 import { YouTubePage } from './pages/YouTubePage';
@@ -109,6 +110,7 @@ export function App() {
                   <Route path="documents" element={<DocumentsPage />} />
                   <Route path="attendance" element={<AttendancePage />} />
                   <Route path="performance" element={<PerformancePage />} />
+                  <Route path="insights" element={<LearningInsightsPage />} />
                   <Route path="assignments" element={<AssignmentsPage />} />
                   <Route path="calculator" element={<CalculatorPage />} />
                   <Route path="study" element={<StudyPage />} />
