@@ -4,7 +4,9 @@ Last verified: 2026-11-03
 
 ## CI follow-up
 
-GitHub Actions run 41653184627 applied both migrations and found no schema drift, but the database test correctly rejected Docker's bridge-side server address despite a loopback client URL. CI now creates a native disposable PostgreSQL cluster on loopback rather than weakening that assertion. The workflow also sets a 20-minute job deadline and explicitly builds the frontend with the production environment. Results of the replacement run must be checked after pushing; a successful local run alone does not establish CI success.
+GitHub Actions run 41653184627 applied both migrations and found no schema drift, but the database test correctly rejected Docker's bridge-side server address despite a loopback client URL. CI now creates a native disposable PostgreSQL cluster on loopback rather than weakening that assertion. The workflow also sets a 20-minute job deadline and explicitly builds the frontend with the production environment. A subsequent startup failure was corrected by placing the Unix socket in the runner-owned data directory and adding startup diagnostics.
+
+Replacement run [41654073566](https://github.com/risheeth26233/student-vault/actions/runs/41654073566) **passed** for implementation commit `a26b4fa` on 2026-11-03. It used PostgreSQL 16.15 and positively identified `student_vault_test` on `127.0.0.1`. Both migrations, live schema drift comparison, all **44 backend tests (zero skipped)**, backend typecheck/lint/build, all **228 frontend tests across 29 files**, frontend lint and production build, and diff validation passed. The isolated server was stopped successfully. This establishes CI verification; live Clerk/provider credentials and deployment verification remain external prerequisites.
 
 ## Latest implementation and publication checkpoint — 2026-11-03
 
