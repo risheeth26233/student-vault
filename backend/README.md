@@ -31,23 +31,23 @@ npm install
    DATABASE_URL=postgresql://user:password@localhost:5432/student_vault
    ```
 
-3. For AI features (Phase 4+), add at least one:
+3. For AI features, add at least one:
    ```env
    OPENAI_API_KEY=your-openai-key
    ANTHROPIC_API_KEY=your-anthropic-key
    ```
 
-4. For YouTube search (Phase 6):
+4. For YouTube search:
    ```env
    YOUTUBE_API_KEY=your-youtube-data-api-v3-key
    ```
 
-4. For web search (Phase 7):
+5. For web search:
    ```env
    BRAVE_SEARCH_API_KEY=your-brave-search-api-key
    ```
 
-5. For image generation (Phase 8):
+6. For image generation:
    ```env
    FAL_API_KEY=your-fal-ai-key
    ```
@@ -61,12 +61,9 @@ npm install
    ```
 3. Run migrations to create tables:
    ```bash
-   npm run prisma:migrate
+   npm run prisma:migrate:deploy
    ```
-   Or for development, push schema directly:
-   ```bash
-   npm run prisma:push
-   ```
+   For an existing database, verify its schema and Prisma migration history before deploying; the initial migration must not be applied blindly to a populated database. Do not substitute `prisma db push` for migration review.
 4. (Optional) Open Prisma Studio to view data:
    ```bash
    npm run prisma:studio
@@ -93,9 +90,30 @@ npm start
 npm run typecheck
 ```
 
+Run backend route tests with `npm test` and lint with `npm run lint`.
+
+### Isolated teacher/intervention database test
+
+`npm run test:db` runs a PostgreSQL-backed route/persistence test only when both `RUN_DATABASE_INTEGRATION_TESTS=1` and `DATABASE_TEST_URL` are set. It refuses non-loopback hosts and any database name except `student_vault_test`, verifies both checked-in migrations are applied, creates uniquely named fixture users, and deletes only those fixture users afterward. It never truncates tables or runs migrations itself. Apply migrations manually only after confirming the URL points to a newly created, disposable local test database. Without the opt-in settings the test is reported as skipped.
+
+On Windows where Docker/Podman are unavailable, install PostgreSQL locally, create a test-only role and empty `student_vault_test` database, then set the two environment variables in the backend process environment. First run `npm run prisma:generate` and `npm run prisma:migrate:deploy` with `DATABASE_URL` explicitly set to that verified local test target; then set `DATABASE_TEST_URL` to the same test-only target and run `npm run test:db`. Never reuse the remote Neon URL or a populated development database for this test.
+
+## Database migrations
+
+The migrations and teacher/intervention persistence suite were successfully exercised on an isolated PostgreSQL 17.11 database on 2026-11-02. See [current verification](../docs/PROJECT_PROGRESS.md) and [deployment and recovery](../docs/DEPLOYMENT.md). Live Clerk/OCR/AI and deployment checks remain external prerequisites.
+
+For a new PostgreSQL database, generate Prisma Client and apply checked-in migrations with `npm run prisma:migrate:deploy`. The initial migration describes the pre-teacher Student-Vault schema; the next migration adds student roles, classrooms, enrollments, and intervention storage.
+
+For an existing database created with `prisma db push` or another untracked setup, take a backup and verify it matches the initial schema before recording that baseline as applied with `npx prisma migrate resolve --applied 20261028120000_initial_schema`. Then run `npm run prisma:migrate:deploy`. Do not mark the baseline applied against an unverified schema.
+
+## Teacher accounts
+
+Set `TEACHER_CLERK_IDS` to a comma-separated allowlist of Clerk user IDs. The backend derives the role from this list on authenticated requests; users cannot change their own role. A teacher creates a class and shares its private join code. Students explicitly join with that code. Teacher API queries require the class to belong to the current teacher and include only active enrollments. The current dashboard shows recorded topic states and assessment records; GuruGraph mastery is not persisted server-side.
+
 ## API Endpoints
 
 ### Health
+- `GET /api/ready` - Database connectivity readiness (200/503, two-second response timeout, no credentials returned). Use alongside process liveness; migration/provider validation remains separate.
 - `GET /api/health` - Health check
 
 ### Topics (Phase 1)
@@ -127,21 +145,21 @@ npm run typecheck
 ### Import (Phase 1)
 - `POST /api/import/v1` - Import Student Vault backup v1 JSON
 
-### AI (Phase 4+)
+### AI
 - `POST /api/ai/chat` - Chat completion
 - `POST /api/ai/chat/stream` - Streaming chat (SSE)
 - `GET /api/ai/providers` - List available providers
 
-### YouTube (Phase 6)
+### YouTube
 - `POST /api/youtube/search` - Search videos
 - `GET /api/youtube/videos/:id` - Get video details
 - `GET /api/youtube/status` - Check configuration
 
-### Web Search (Phase 7)
+### Web Search
 - `POST /api/search` - Search the web
 - `GET /api/search/status` - Check configuration
 
-### Image Generation (Phase 8)
+### Image Generation
 - `POST /api/images/generate` - Generate image
 - `GET /api/images/status` - Check configuration
 
@@ -150,12 +168,24 @@ npm run typecheck
 The frontend (in `../`) communicates with the backend via these endpoints. During development:
 
 1. Start backend: `cd backend && npm run dev` (port 3000)
-2. Start frontend: `cd .. && npx vite` (port 5173)
+2. Start frontend: `cd ../frontend && npm run dev` (port 5173)
 3. Frontend calls backend at `http://localhost:3000/api/*`
 
 CORS is configured to allow the frontend URL from `FRONTEND_URL` environment variable.
 
-**Authentication (Phase 1 development):** All API endpoints require `x-user-id` header with a valid user ID. Phase 2 will replace this with proper authentication.
+**Authentication:** API endpoints require a valid Clerk session token in `Authorization: Bearer <token>`, except the public health and Clerk webhook routes. Teacher APIs also enforce the role and class ownership server-side.
+
+### Handwriting extraction
+- `GET /api/handwriting/status` - Check whether OCR is configured.
+- `POST /api/handwriting/extract` - Extract submitted pages; requires `consent: true`, validates image data, and returns explicit unavailable/provider failure states.
+
+### Teacher classes and interventions
+- `GET /api/teacher/classes`, `POST /api/teacher/classes` - Manage classes owned by the authenticated teacher.
+- `GET /api/teacher/classes/:id/students` - View records for active students in a teacher-owned class.
+- `POST /api/teacher/enrollments/accept` - Student explicitly joins with a teacher-shared code.
+- `POST /api/teacher/classes/:id/interventions` - Propose a follow-up for an active enrolled student.
+- `PATCH /api/teacher/interventions/:id` - Approve or cancel a plan owned by the teacher.
+- `GET /api/student/interventions`, `PATCH /api/student/interventions/:id` - Students view approved plans and move them through in-progress to completed with an outcome note.
 
 ## Service Configuration
 
@@ -167,14 +197,23 @@ Each feature requires specific environment variables:
 | Attendance | `DATABASE_URL` | 1 |
 | Resources/Files | `DATABASE_URL` | 1 |
 | Backup Import | `DATABASE_URL` | 1 |
-| AI Chat | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` | 4 |
-| YouTube Search | `YOUTUBE_API_KEY` | 6 |
-| Web Search | `BRAVE_SEARCH_API_KEY` | 7 |
-| Image Generation | `FAL_API_KEY` or `OPENAI_API_KEY` | 8 |
-| File Storage | `R2_*` credentials | 3 |
-| Auth | `CLERK_*` keys | 2 |
+| AI Chat and document-grounded study | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`; document sharing requires an explicit request flag | 6 |
+| Local PDF text extraction | Python 3 with `pypdf` from `requirements-documents.txt`; optional `PDF_PYTHON_BIN` | 6 |
+| Image OCR | `OCR_PROVIDER=openai`, `OPENAI_API_KEY`; requires explicit user consent | 3/6 |
+| YouTube Search | `YOUTUBE_API_KEY` | 1 |
+| Web Search | `BRAVE_SEARCH_API_KEY` | 1 |
+| Image Generation | `FAL_API_KEY` or `OPENAI_API_KEY` | 1 |
+| File Storage | `R2_*` credentials | 1 |
+| Auth | `CLERK_*` keys | 1 |
 
 Services without required keys return `503 Service Unavailable` with a clear message.
+
+### Document-grounded study
+
+- Install the optional PDF parser with `python -m pip install -r requirements-documents.txt`. The API uses a bounded Python subprocess on the Student-Vault server; it does not send PDF bytes to an AI provider during extraction. Configure `PDF_PYTHON_BIN` if `python` is not on `PATH`.
+- `POST /api/ai/study` accepts only current-user resource IDs and a question. It validates resource ownership, type, size, and file signature; text PDFs are parsed locally and relevant page excerpts are selected before any provider call.
+- `shareWithProvider` defaults to `false`. With `false`, extracted excerpts are returned only to the authenticated user and no chat/OCR provider is called. With `true`, retrieved excerpts may be sent to the configured chat provider. Selected JPEG/PNG/WebP images may first be sent to the configured OCR provider; GIFs and other types are not OCR processed.
+- Unsupported, encrypted, malformed, image-only, missing-parser, timeout, and provider-error states are returned without presenting the source as evidence. Provider answers are instructed to distinguish cited document support from general guidance.
 
 ## Security
 
@@ -214,6 +253,6 @@ backend/
 └── README.md
 ```
 
-## Next Steps
+## Project roadmap and current state
 
-See [ARCHITECTURE_AUDIT.md](../ARCHITECTURE_AUDIT.md) for the full Phase 0-10 roadmap.
+The project roadmap is locked to seven phases. See [the phase-by-phase progress record](../docs/PROJECT_PROGRESS.md) for implementation status, verification results, provider limitations, and migration setup. Teacher and intervention migrations are additive; use `npm run prisma:migrate:deploy` only after configuring and verifying the intended database.

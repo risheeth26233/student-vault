@@ -1,7 +1,9 @@
+import { lazy } from 'react';
+import { PageBoundary } from './components/PageBoundary';
 // Main App Component
 // Routes and providers with animated transitions
 
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { QueryProvider } from './hooks/useQueryProvider';
 import { AuthProvider } from './hooks/useAuth';
 import { ToastProvider } from './components/ui/Toast';
@@ -9,21 +11,23 @@ import { NotificationProvider } from './features/notifications/NotificationProvi
 import { AppLayout } from './components/layout/AppLayout';
 import { WelcomePage } from './pages/WelcomePage';
 import { DashboardPage } from './pages/DashboardPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { VaultPage } from './pages/VaultPage';
-import { NotesPage } from './pages/NotesPage';
-import { DocumentsPage } from './pages/DocumentsPage';
-import { AttendancePage } from './pages/AttendancePage';
-import { AssignmentsPage } from './pages/AssignmentsPage';
-import { PerformancePage } from './pages/PerformancePage';
-import { LearningInsightsPage } from './pages/LearningInsightsPage';
-import { CalculatorPage } from './pages/CalculatorPage';
-import { StudyPage } from './pages/StudyPage';
-import { YouTubePage } from './pages/YouTubePage';
-import { SearchPage } from './pages/SearchPage';
-import { AIPage } from './pages/AIPage';
-import { ImagesPage } from './pages/ImagesPage';
-import { SyncPage } from './pages/SyncPage';
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
+const VaultPage = lazy(() => import('./pages/VaultPage').then(module => ({ default: module.VaultPage })));
+const NotesPage = lazy(() => import('./pages/NotesPage').then(module => ({ default: module.NotesPage })));
+const DocumentsPage = lazy(() => import('./pages/DocumentsPage').then(module => ({ default: module.DocumentsPage })));
+const AttendancePage = lazy(() => import('./pages/AttendancePage').then(module => ({ default: module.AttendancePage })));
+const AssignmentsPage = lazy(() => import('./pages/AssignmentsPage').then(module => ({ default: module.AssignmentsPage })));
+const PerformancePage = lazy(() => import('./pages/PerformancePage').then(module => ({ default: module.PerformancePage })));
+const LearningInsightsPage = lazy(() => import('./pages/LearningInsightsPage').then(module => ({ default: module.LearningInsightsPage })));
+const HandwritingPage = lazy(() => import('./pages/HandwritingPage').then(module => ({ default: module.HandwritingPage })));
+const CalculatorPage = lazy(() => import('./pages/CalculatorPage').then(module => ({ default: module.CalculatorPage })));
+const StudyPage = lazy(() => import('./pages/StudyPage').then(module => ({ default: module.StudyPage })));
+const YouTubePage = lazy(() => import('./pages/YouTubePage').then(module => ({ default: module.YouTubePage })));
+const SearchPage = lazy(() => import('./pages/SearchPage').then(module => ({ default: module.SearchPage })));
+const AIPage = lazy(() => import('./pages/AIPage').then(module => ({ default: module.AIPage })));
+const ImagesPage = lazy(() => import('./pages/ImagesPage').then(module => ({ default: module.ImagesPage })));
+const SyncPage = lazy(() => import('./pages/SyncPage').then(module => ({ default: module.SyncPage })));
+const TeacherPage = lazy(() => import('./pages/TeacherPage').then(module => ({ default: module.TeacherPage })));
 import { LayoutDashboard, Calendar, Video, Search, MessageSquare, Image, Cloud, ArrowLeft } from 'lucide-react';
 import { Card } from './components/ui/Card';
 import { Button } from './components/ui/Button';
@@ -86,6 +90,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function PageOutlet() {
+  const location = useLocation();
+  return <PageBoundary key={location.pathname}><Outlet /></PageBoundary>;
+}
+
 export function App() {
   // Get Clerk publishable key from meta tag (same as legacy)
   const metaKey = document.querySelector('meta[name="clerk-publishable-key"]');
@@ -103,7 +112,7 @@ export function App() {
                 <Route path="/" element={<WelcomePage />} />
                 
                 {/* Protected routes */}
-                <Route element={<ProtectedRoute><AppLayout><Outlet /></AppLayout></ProtectedRoute>}>
+                <Route element={<ProtectedRoute><AppLayout><PageOutlet /></AppLayout></ProtectedRoute>}>
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="vault" element={<VaultPage />} />
                   <Route path="notes" element={<NotesPage />} />
@@ -111,6 +120,7 @@ export function App() {
                   <Route path="attendance" element={<AttendancePage />} />
                   <Route path="performance" element={<PerformancePage />} />
                   <Route path="insights" element={<LearningInsightsPage />} />
+                  <Route path="handwriting" element={<HandwritingPage />} />
                   <Route path="assignments" element={<AssignmentsPage />} />
                   <Route path="calculator" element={<CalculatorPage />} />
                   <Route path="study" element={<StudyPage />} />
@@ -120,6 +130,7 @@ export function App() {
                   <Route path="images" element={<ImagesPage />} />
                   <Route path="sync" element={<SyncPage />} />
                   <Route path="profile" element={<ProfilePage />} />
+                  <Route path="teacher" element={<TeacherPage />} />
                 </Route>
                 
                 {/* Legacy redirect routes (for backward compatibility) */}

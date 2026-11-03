@@ -78,29 +78,6 @@ export class AIService {
 export const aiService = new AIService();
 
 /**
- * Placeholder provider - used as fallback when no real provider is configured
- */
-export class PlaceholderAIProvider implements AIProvider {
-  name = "placeholder";
-
-  async chat(_options: AIChatOptions): Promise<AIChatResponse> {
-    return {
-      content: "[AI Response Placeholder] This feature will be implemented in Phase 4.",
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    };
-  }
-
-  async *chatStream(_options: AIChatOptions): AsyncIterable<string> {
-    yield "[Streaming Placeholder] ";
-    yield "This feature will be implemented in Phase 4.";
-  }
-
-  async embed(_texts: string[]): Promise<number[][]> {
-    return _texts.map(() => new Array(1536).fill(0));
-  }
-}
-
-/**
  * OpenAI Provider Implementation
  */
 export class OpenAIProvider implements AIProvider {
@@ -110,7 +87,7 @@ export class OpenAIProvider implements AIProvider {
   private embeddingModel = "text-embedding-3-small";
 
   constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey });
+    this.client = new OpenAI({ apiKey, timeout: 30_000, maxRetries: 1 });
   }
 
   async chat(options: AIChatOptions): Promise<AIChatResponse> {
@@ -171,7 +148,7 @@ export class AnthropicProvider implements AIProvider {
   private defaultModel = "claude-3-5-sonnet-20241022";
 
   constructor(apiKey: string) {
-    this.client = new Anthropic({ apiKey });
+    this.client = new Anthropic({ apiKey, timeout: 30_000, maxRetries: 1 });
   }
 
   async chat(options: AIChatOptions): Promise<AIChatResponse> {
@@ -226,9 +203,7 @@ export class AnthropicProvider implements AIProvider {
   }
 
   async embed(_texts: string[]): Promise<number[][]> {
-    // Anthropic doesn't provide embeddings API yet
-    // Return zero vectors as fallback
-    return _texts.map(() => new Array(1536).fill(0));
+    throw new Error("Embeddings are not supported by the configured Anthropic provider");
   }
 }
 
@@ -253,8 +228,4 @@ export async function initializeAIProviders(): Promise<void> {
     aiService.registerProvider("anthropic", anthropicProvider, setAsDefault);
   }
 
-  // If no real providers configured, register placeholder
-  if (aiService.listProviders().length === 0) {
-    aiService.registerProvider("placeholder", new PlaceholderAIProvider(), true);
-  }
 }

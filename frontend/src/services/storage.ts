@@ -173,7 +173,7 @@ function getDB(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
-export async function loadResourcesFromIDB(): Promise<Map<string, StoredResource[]>> {
+export async function loadResourcesFromIDB(strict = false): Promise<Map<string, StoredResource[]>> {
   const resourcesByTopic = new Map<string, StoredResource[]>();
   
   try {
@@ -193,12 +193,13 @@ export async function loadResourcesFromIDB(): Promise<Map<string, StoredResource
     }
   } catch (error) {
     console.error('Failed to load resources from IndexedDB:', error);
+    if (strict) throw new Error('Could not read local file storage. Backup/sync stopped to preserve your data.');
   }
   
   return resourcesByTopic;
 }
 
-export async function saveResourcesToIDB(resources: StoredResource[]): Promise<void> {
+export async function saveResourcesToIDB(resources: StoredResource[], strict = false): Promise<void> {
   if (resources.length === 0) return;
   
   try {
@@ -216,6 +217,7 @@ export async function saveResourcesToIDB(resources: StoredResource[]): Promise<v
     });
   } catch (error) {
     console.error('Failed to save resources to IndexedDB:', error);
+    if (strict) throw new Error('Could not save files locally. Sync did not finish.');
   }
 }
 

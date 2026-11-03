@@ -1,7 +1,8 @@
 // GuruGraph — signal normalization.
 //
 // Converts existing Student-Vault records (topics, assessments, assignments,
-// attendance, resources) into a single normalized learning-signal shape.
+// attendance, resources) plus Phase 3 handwritten-practice evidence into a
+// single normalized learning-signal shape.
 // Pure, deterministic and read-only: it never mutates or writes Student-Vault
 // data, and it never invents information the student did not record.
 
@@ -475,6 +476,65 @@ function normalizeResources(
 }
 
 // ---------------------------------------------------------------------------
+// Handwritten-practice evidence (Phase 3)
+// ---------------------------------------------------------------------------
+
+const HANDWRITING_EVIDENCE_FALLBACK = 'Recorded by the handwritten practice workflow';
+
+/**
+ * Slim Phase 3 evidence → `practice_outcome` signals.
+ * Definite outcomes (correct/incorrect) become binary evidence; ungraded or
+ * uncertain observations are recorded with outcome `none` so they are visible
+ * in explainability without ever moving mastery on their own.
+ */
+function normalizeHandwriting(
+  source: GuruGraphDataSource,
+  topicIndex: Map<string, TopicRef>,
+  out: PassResult
+): void {
+  for (const raw of readArray(source.handwriting)) {
+    if (!isRecord(raw)) continue;
+    const id = readId(raw.id);
+    if (!id) {
+      skip('handwriting', 'unknown', 'missing_id', out.skipped);
+      continue;
+    }
+    const topicId = readId(raw.topicId);
+    const topic = topicId ? topicIndex.get(topicId) : undefined;
+    if (!topic) {
+      skip('handwriting', id, 'unknown_topic', out.skipped);
+      continue;
+    }
+    const observedAt = readDate(raw.observedAt);
+    if (!observedAt) {
+      skip('handwriting', id, 'invalid_date', out.skipped);
+      continue;
+    }
+    const outcome = typeof raw.outcome === 'string' ? raw.outcome : '';
+    if (outcome !== 'correct' && outcome !== 'incorrect' && outcome !== 'ungraded') {
+      skip('handwriting', id, 'invalid_status', out.skipped);
+      continue;
+    }
+    const label = readTitle(raw.label) ?? 'Handwritten practice evidence';
+    const detail = readTitle(raw.detail) ?? HANDWRITING_EVIDENCE_FALLBACK;
+
+    out.signals.push(
+      makeSignal({
+        kind: 'practice_outcome',
+        subjectId: topic.subjectId,
+        topicId: topic.id,
+        observedAt,
+        outcome:
+          outcome === 'ungraded'
+            ? { type: 'none', raw: detail }
+            : { type: 'binary', value: outcome === 'correct' ? 1 : 0, raw: detail },
+        evidence: evidence('handwriting', id, label, detail, observedAt),
+      })
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
 
@@ -501,6 +561,7 @@ export function normalizeLearningSignals(
   normalizeAssignments(source, subjects, topicIndex, out);
   normalizeAttendance(source, subjects, out);
   normalizeResources(source, topicIndex, out);
+  normalizeHandwriting(source, topicIndex, out);
 
   return {
     version: 1,

@@ -20,8 +20,9 @@ export const resourcesKey = ['resources'] as const;
 /** Mirrors the legacy 20 MB cap (script.js MAX_FILE_SIZE) and the backend check. */
 export const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
-/** Same `accept` value the legacy file input uses. */
-export const DOCUMENT_ACCEPT = '.pdf,image/*,application/pdf';
+/** File types accepted by the API's signature validator. */
+export const DOCUMENT_ACCEPT = '.pdf,application/pdf,image/jpeg,image/png,image/webp,image/gif';
+const SUPPORTED_DOCUMENT_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 export type ResourcesStoreMode = 'api' | 'local';
 
@@ -314,8 +315,8 @@ export async function deleteTopicResources(
 // ---------------------------------------------------------------------------
 
 export function validateDocumentFile(file: File): void {
-  if (file.type !== 'application/pdf' && !file.type.startsWith('image/')) {
-    throw makeError('Only PDF and image files are allowed', 400, 'invalid_type');
+  if (!SUPPORTED_DOCUMENT_TYPES.has(file.type)) {
+    throw makeError('Supported files are PDF, JPEG, PNG, WebP, or GIF', 400, 'invalid_type');
   }
   if (file.size > MAX_FILE_SIZE) {
     throw makeError('File size exceeds 20MB limit', 400, 'file_too_large');

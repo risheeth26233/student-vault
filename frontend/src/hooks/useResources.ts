@@ -15,12 +15,13 @@ import type { Resource } from '../types/api';
 export { fileToBase64, uploadResourceToR2 };
 export { resourcesKey, getResourcesMode, resetResourcesMode } from '../services/resourceStore';
 
-export function useResources(topicId?: string) {
+export function useResources(topicId?: string, enabled = true) {
   return useQuery({
     queryKey: [...resourcesKey, topicId],
     // No topicId = fetch all resources (used by the dashboard overview)
     queryFn: () => listResources({ topicId }),
     staleTime: 1000 * 60 * 2,
+    enabled,
   });
 }
 

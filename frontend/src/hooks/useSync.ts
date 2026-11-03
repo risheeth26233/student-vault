@@ -3,9 +3,10 @@ import { syncApi, importApi } from '../services/api';
 import type { SyncPullResponse, SyncPushRequest, SyncPushResponse, BackupV1 } from '../types/api';
 import { loadClientVersion, saveClientVersion, loadProfile, loadTopics, loadAttendanceSubjects, loadResourcesFromIDB } from '../services/storage';
 
-export function useSyncStatus() {
+export function useSyncStatus(enabled = true) {
   return useQuery({
     queryKey: ['sync', 'status'],
+    enabled,
     queryFn: () => syncApi.status(),
     staleTime: 1000 * 60 * 1,
   });
@@ -34,8 +35,8 @@ export async function buildPushPayload(): Promise<SyncPushRequest> {
   const profile = loadProfile();
   const topics = loadTopics();
   const attendanceSubjects = loadAttendanceSubjects();
-  const resourcesByTopic = await loadResourcesFromIDB();
-  
+  const resourcesByTopic = await loadResourcesFromIDB(true);
+
   // Flatten resources
   const resources: SyncPushRequest['resources'] = [];
   for (const [, topicResources] of resourcesByTopic) {
@@ -50,11 +51,12 @@ export async function buildPushPayload(): Promise<SyncPushRequest> {
         data: resource.data ?? null,
         downloadUrl: resource.downloadUrl ?? null,
         createdAt: resource.addedAt,
+        addedAt: resource.addedAt,
         userId: '', // Will be filled by server
       });
     }
   }
-  
+
   return {
     profile: profile ? { name: profile.name } : null,
     topics: topics.map((t) => ({
@@ -73,22 +75,18 @@ export async function buildPushPayload(): Promise<SyncPushRequest> {
 export async function performFullSync(
   onProgress?: (step: string) => void
 ): Promise<{ pull: SyncPullResponse; push: SyncPushResponse }> {
-  // Pull first
+  const snapshot = JSON.stringify(await buildPushPayload());
+  const pushResponse = await performPushSync(onProgress);
+  if (!pushResponse.success) throw new Error('Sync conflicts detected. Local data was preserved; export a backup before resolving conflicts.');
   onProgress?.('Pulling data from server...');
   const pullResponse = await syncApi.pull();
-  
-  // Update local storage with pulled data
-  onProgress?.('Updating local storage...');
-  if (pullResponse.profile) {
-    localStorage.setItem('sv_profile', JSON.stringify(pullResponse.profile));
-  }
-  
-  // Store topics
-  localStorage.setItem('sv_topics', JSON.stringify(pullResponse.topics));
-  
-  // Store attendance
-  localStorage.setItem('sv_attendance', JSON.stringify(pullResponse.attendanceSubjects));
-  
+
+  const current = await buildPushPayload();
+  const before = JSON.parse(snapshot) as SyncPushRequest;
+  current.clientVersion = before.clientVersion;
+  if (JSON.stringify(current) !== snapshot) throw new Error('Local data changed during sync. Your edits were preserved; sync again.');
+
+  const localSnapshot = JSON.stringify(['sv_profile', 'sv_topics', 'sv_attendance'].map(key => localStorage.getItem(key)));
   // Store resources in IndexedDB
   const { saveResourcesToIDB } = await import('../services/storage');
   const resourcesToStore = pullResponse.resources.map((r) => ({
@@ -97,42 +95,39 @@ export async function performFullSync(
     name: r.name,
     type: r.mimeType,
     size: parseInt(r.size, 10),
+    data: r.data ?? undefined,
     r2Key: r.r2Key ?? undefined,
     downloadUrl: r.downloadUrl ?? undefined,
     addedAt: r.createdAt,
   }));
-  await saveResourcesToIDB(resourcesToStore);
-  
+  await saveResourcesToIDB(resourcesToStore, true);
+  if (JSON.stringify(['sv_profile', 'sv_topics', 'sv_attendance'].map(key => localStorage.getItem(key))) !== localSnapshot) throw new Error('Local data changed while files were saving. Your edits were preserved; sync again.');
+  // Update local storage with pulled data
+  onProgress?.('Updating local storage...');
+  if (pullResponse.profile) {
+    localStorage.setItem('sv_profile', JSON.stringify({ ...loadProfile(), name: pullResponse.profile.name ?? loadProfile()?.name ?? '' }));
+  }
+
+  // Store topics
+  localStorage.setItem('sv_topics', JSON.stringify(pullResponse.topics));
+
+  // Store attendance
+  localStorage.setItem('sv_attendance', JSON.stringify(pullResponse.attendanceSubjects));
+
+
+
   // Update client version
   saveClientVersion(pullResponse.serverVersion);
-  
+
   // Invalidate queries
   // Invalidate queries (will be handled by the caller using the actual queryClient)
   // queryClient.invalidateQueries({ queryKey: ['topics'] });
   // queryClient.invalidateQueries({ queryKey: ['attendance'] });
   // queryClient.invalidateQueries({ queryKey: ['resources'] });
-  
+
   onProgress?.('Pull complete');
-  
-  return { 
-    pull: pullResponse, 
-    push: { 
-      success: true, 
-      message: '', 
-      serverVersion: pullResponse.serverVersion, 
-      stats: {
-        topicsCreated: 0,
-        topicsUpdated: 0,
-        topicsDeleted: 0,
-        attendanceCreated: 0,
-        attendanceUpdated: 0,
-        attendanceDeleted: 0,
-        resourcesCreated: 0,
-        resourcesUpdated: 0,
-        resourcesDeleted: 0,
-      }
-    } 
-  };
+
+  return { pull: pullResponse, push: pushResponse };
 }
 
 export async function performPushSync(
@@ -140,17 +135,17 @@ export async function performPushSync(
 ): Promise<SyncPushResponse> {
   onProgress?.('Building push payload...');
   const payload = await buildPushPayload();
-  
+
   onProgress?.('Pushing changes to server...');
   const response = await syncApi.push(payload);
-  
+
   if (response.success) {
     saveClientVersion(response.serverVersion);
     onProgress?.('Push complete');
   } else if (response.conflicts && response.conflicts.length > 0) {
     onProgress?.(`Conflicts detected: ${response.conflicts.length}`);
   }
-  
+
   return response;
 }
 
@@ -158,7 +153,7 @@ export function createBackupV1(): BackupV1 {
   const profile = loadProfile();
   const topics = loadTopics();
   const attendanceSubjects = loadAttendanceSubjects();
-  
+
   // Note: resources need to be loaded from IndexedDB asynchronously
   // This is a synchronous version for immediate use
   return {
@@ -175,8 +170,8 @@ export async function createFullBackupV1(): Promise<BackupV1> {
   const profile = loadProfile();
   const topics = loadTopics();
   const attendanceSubjects = loadAttendanceSubjects();
-  const resourcesByTopic = await loadResourcesFromIDB();
-  
+  const resourcesByTopic = await loadResourcesFromIDB(true);
+
   const resources: BackupV1['resources'] = [];
   for (const [, topicResources] of resourcesByTopic) {
     for (const resource of topicResources) {
@@ -194,7 +189,7 @@ export async function createFullBackupV1(): Promise<BackupV1> {
       });
     }
   }
-  
+
   return {
     version: 1,
     exportedAt: new Date().toISOString(),

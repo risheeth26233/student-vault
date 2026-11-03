@@ -18,6 +18,13 @@ export const SIGNAL_WEIGHTS = {
   study_activity: 0.6,
   attendance_session: 0.3,
   resource_activity: 0.2,
+  /**
+   * Phase 3: a checked handwritten/practice answer with a definite outcome.
+   * Weighted below a formal assessment (1) and above mere activity (0.6)
+   * because it is genuinely graded evidence — but it is self-submitted, so a
+   * single attempt still reports with low confidence and the disclaimer.
+   */
+  practice_outcome: 0.7,
 } as const;
 
 /**

@@ -1,13 +1,18 @@
 import "dotenv/config";
+import { registerWebhookBody } from "./plugins/webhook-body.js";
 import Fastify from "fastify";
 import { loadEnv } from "./config/env.js";
 import { clerkAuthPlugin } from "./plugins/clerk-auth.js";
+import { registerRequestLimits } from "./plugins/request-limits.js";
 import { initializeAIProviders } from "./services/ai.js";
 import { initializeYouTubeProvider } from "./services/youtube.js";
 import { initializeSearchProvider } from "./services/search.js";
 import { initializeImageProvider } from "./services/images.js";
+import { initializeOcrProvider } from "./services/ocr.js";
 import { healthRoutes } from "./routes/health.js";
+import { readinessRoutes } from "./routes/readiness.js";
 import { aiRoutes } from "./routes/ai.js";
+import { aiStudyRoutes } from "./routes/ai-study.js";
 import { youtubeRoutes } from "./routes/youtube.js";
 import { searchRoutes } from "./routes/search.js";
 import { imagesRoutes } from "./routes/images.js";
@@ -16,9 +21,12 @@ import { attendanceRoutes } from "./routes/attendance.js";
 import { assignmentsRoutes } from "./routes/assignments.js";
 import { assessmentsRoutes } from "./routes/assessments.js";
 import { resourcesRoutes } from "./routes/resources.js";
+import { handwritingRoutes } from "./routes/handwriting.js";
 import { importRoutes } from "./routes/import.js";
 import { clerkWebhookRoutes } from "./routes/clerk-webhook.js";
 import { syncRoutes } from "./routes/sync.js";
+import { teacherRoutes } from "./routes/teacher.js";
+import { prisma } from "./utils/prisma.js";
 
 // Load and validate environment
 loadEnv();
@@ -51,16 +59,20 @@ const env = loadEnv();
 await app.register(import("@fastify/cors"), {
   origin: env.FRONTEND_URL,
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 });
 
 // Clerk authentication
-await app.register(clerkAuthPlugin);
+registerWebhookBody(app);
+await clerkAuthPlugin(app);
+await registerRequestLimits(app);
 
 // Register routes
 await app.register(healthRoutes);
+await app.register(readinessRoutes);
 await app.register(aiRoutes);
+await app.register(aiStudyRoutes);
 await app.register(youtubeRoutes);
 await app.register(searchRoutes);
 await app.register(imagesRoutes);
@@ -69,13 +81,15 @@ await app.register(attendanceRoutes);
 await app.register(assignmentsRoutes);
 await app.register(assessmentsRoutes);
 await app.register(resourcesRoutes);
+await app.register(handwritingRoutes);
 await app.register(importRoutes);
 await app.register(clerkWebhookRoutes);
 await app.register(syncRoutes);
+await app.register(teacherRoutes);
 
 // Global error handler
 app.setErrorHandler((error, request, reply) => {
-  app.log.error(error);
+  app.log.error({ errorName: error.name, errorCode: error.code, statusCode: error.statusCode }, "Request failed");
 
   // Validation errors
   if (error.validation) {
@@ -114,6 +128,8 @@ async function start(): Promise<void> {
     await initializeSearchProvider();
     // Initialize Image provider
     await initializeImageProvider();
+    // Initialize handwritten-work OCR provider (Phase 3)
+    initializeOcrProvider();
     
     const port = Number(process.env.PORT) || 3000;
     await app.listen({ port, host: "0.0.0.0" });
@@ -122,6 +138,13 @@ async function start(): Promise<void> {
     app.log.error(err);
     process.exit(1);
   }
+}
+
+app.addHook("onClose", async () => { await prisma.$disconnect(); });
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.once(signal, () => {
+    void app.close().catch(() => { process.exitCode = 1; });
+  });
 }
 
 start();

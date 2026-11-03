@@ -1,9 +1,10 @@
 // GuruGraph — read-only integration with existing Student-Vault data.
 //
 // This hook is the ONLY connection between the workspace and the intelligence
-// layer: it subscribes to the same queries the Phase 1 pages already use and
-// feeds them into the GuruGraph service. It never writes back to a
-// Student-Vault store, so Phase 1 behaviour is untouched.
+// layer: it subscribes to the queries the Phase 1 pages already use (plus the
+// Phase 3 handwritten-practice evidence list, added in Phase 3) and feeds them
+// into the GuruGraph service. It never writes back to a Student-Vault store,
+// so Phase 1 behaviour is untouched.
 
 import { useMemo, useState } from 'react';
 import { useAllTopics } from '../../hooks/useTopics';
@@ -12,6 +13,7 @@ import { useAssignments } from '../../hooks/useAssignments';
 import { useAttendanceSubjects } from '../../hooks/useAttendance';
 import { useResources } from '../../hooks/useResources';
 import { useSubjectRegistry } from '../../hooks/useSubjects';
+import { useHandwritingEvidence } from '../../hooks/useHandwriting';
 import { createGuruGraphService } from '../service/intelligenceService';
 import type { GuruGraphIntelligenceService, IngestReport, IntelligenceSnapshot } from '../domain/types';
 
@@ -51,6 +53,7 @@ export function useGuruGraphIntelligence(
   const attendanceQuery = useAttendanceSubjects();
   const resourcesQuery = useResources();
   const subjectsQuery = useSubjectRegistry();
+  const evidenceQuery = useHandwritingEvidence();
 
   // One stable service instance per mounted hook (lazy state initializer).
   const [service] = useState<GuruGraphIntelligenceService>(() => createGuruGraphService());
@@ -61,6 +64,7 @@ export function useGuruGraphIntelligence(
   const attendanceSubjects = attendanceQuery.data?.subjects;
   const resources = resourcesQuery.data?.resources;
   const subjectRegistry = subjectsQuery.data;
+  const handwriting = evidenceQuery.data;
 
   const isLoading =
     topicsQuery.isPending ||
@@ -68,7 +72,8 @@ export function useGuruGraphIntelligence(
     assignmentsQuery.isPending ||
     attendanceQuery.isPending ||
     resourcesQuery.isPending ||
-    subjectsQuery.isPending;
+    subjectsQuery.isPending ||
+    evidenceQuery.isPending;
 
   const error =
     topicsQuery.error ??
@@ -77,6 +82,7 @@ export function useGuruGraphIntelligence(
     attendanceQuery.error ??
     resourcesQuery.error ??
     subjectsQuery.error ??
+    evidenceQuery.error ??
     null;
 
   const snapshot = useMemo(() => {
@@ -88,6 +94,7 @@ export function useGuruGraphIntelligence(
       attendanceSubjects,
       resources,
       subjectRegistry,
+      handwriting,
     });
     return service.compute();
   }, [
@@ -100,6 +107,7 @@ export function useGuruGraphIntelligence(
     attendanceSubjects,
     resources,
     subjectRegistry,
+    handwriting,
   ]);
 
   const report = snapshot?.report ?? null;

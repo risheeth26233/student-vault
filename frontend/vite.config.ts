@@ -55,14 +55,14 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@/components': path.resolve(__dirname, './src/components'),
-      '@/hooks': path.resolve(__dirname, './src/hooks'),
-      '@/lib': path.resolve(__dirname, './src/lib'),
-      '@/services': path.resolve(__dirname, './src/services'),
-      '@/pages': path.resolve(__dirname, './src/pages'),
-      '@/styles': path.resolve(__dirname, './src/styles'),
-      '@/types': path.resolve(__dirname, './src/types'),
+      '@': path.resolve(import.meta.dirname, './src'),
+      '@/components': path.resolve(import.meta.dirname, './src/components'),
+      '@/hooks': path.resolve(import.meta.dirname, './src/hooks'),
+      '@/lib': path.resolve(import.meta.dirname, './src/lib'),
+      '@/services': path.resolve(import.meta.dirname, './src/services'),
+      '@/pages': path.resolve(import.meta.dirname, './src/pages'),
+      '@/styles': path.resolve(import.meta.dirname, './src/styles'),
+      '@/types': path.resolve(import.meta.dirname, './src/types'),
     },
   },
   server: {

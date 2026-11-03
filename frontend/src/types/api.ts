@@ -278,6 +278,17 @@ export interface AIProvidersResponse {
   default: string | null;
 }
 
+export interface AIStudyResponse {
+  mode: 'provider_grounded' | 'local_excerpts' | 'no_sources';
+  answer: string;
+  sources: Array<{ resourceId: string; title: string; page: number; text: string }>;
+  sourceErrors: Array<{ resourceId: string; title: string; error: string }>;
+  extractionProviders: string[];
+  provider: string | null;
+  providerAttempted: boolean;
+  notice: string;
+}
+
 export interface ImageGenerationOptions {
   prompt: string;
   negativePrompt?: string;
@@ -295,7 +306,7 @@ export interface GeneratedImage {
   width: number;
   height: number;
   prompt: string;
-  seed: number;
+    seed?: number;
   format?: string;
 }
 
@@ -322,7 +333,7 @@ export interface SyncPushRequest {
   profile?: { name: string } | null;
   topics: (Topic & { _deleted?: boolean })[];
   attendanceSubjects: (AttendanceSubject & { _deleted?: boolean })[];
-  resources: (Resource & { _deleted?: boolean })[];
+    resources: (Resource & { _deleted?: boolean; addedAt?: string })[];
   clientVersion?: number;
 }
 
@@ -391,4 +402,36 @@ export interface ImportResponse {
     attendanceSubjectsImported: number;
     resourcesImported: number;
   };
+}
+
+// ==================== HANDWRITING / OCR API (Phase 3) ====================
+
+export interface OcrStatusResponse {
+  configured: boolean;
+  provider: string | null;
+  maxPages: number;
+  maxPageDataUrlChars: number;
+}
+
+export interface OcrPageInput {
+  id: string;
+  dataUrl: string;
+}
+
+export type OcrPageStatus = 'ok' | 'low_confidence' | 'failed';
+
+export interface OcrPageResult {
+  id: string;
+  status: OcrPageStatus;
+  text: string;
+  /** Provider self-estimate 0..1 (or null) — an estimate, not a measurement. */
+  estimatedConfidence: number | null;
+  notes: string[];
+  error?: string;
+}
+
+export interface OcrExtractResponse {
+  provider: string;
+  configured: boolean;
+  pages: OcrPageResult[];
 }

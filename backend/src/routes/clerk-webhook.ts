@@ -3,6 +3,13 @@ import { z } from "zod";
 import { prisma } from "../utils/prisma.js";
 import { getEnv } from "../config/env.js";
 import { toJsonSchema } from "../utils/schema.js";
+import { verifyClerkWebhookSignature } from "../utils/clerkWebhookSignature.js";
+
+declare module "fastify" {
+  interface FastifyRequest {
+    rawBody?: Buffer;
+  }
+}
 
 const env = getEnv();
 
@@ -12,13 +19,13 @@ const clerkWebhookEventZod = z.object({
     id: z.string(),
     email_addresses: z.array(z.object({
       email_address: z.string().email(),
-    })),
-    first_name: z.string().nullable(),
-    last_name: z.string().nullable(),
-    username: z.string().nullable(),
-    image_url: z.string().url(),
-    created_at: z.number(),
-    updated_at: z.number(),
+    })).optional(),
+    first_name: z.string().nullable().optional(),
+    last_name: z.string().nullable().optional(),
+    username: z.string().nullable().optional(),
+    image_url: z.string().url().optional(),
+    created_at: z.number().optional(),
+    updated_at: z.number().optional(),
   }),
 });
 
@@ -30,7 +37,8 @@ const webhookResponseSchema = toJsonSchema(webhookResponseZod);
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
 const errorResponseSchema = toJsonSchema(errorResponseZod);
 
-export async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
+export function createClerkWebhookRoutes(db = prisma, secret = env.CLERK_WEBHOOK_SECRET) {
+return async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/webhooks/clerk - Handle Clerk webhook events
   app.post("/api/webhooks/clerk", {
     schema: {
@@ -44,19 +52,17 @@ export async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
       },
     },
   }, async (request, reply) => {
-    // Verify webhook signature
-    const signature = request.headers["clerk-signature"] as string;
-    const webhookSecret = env.CLERK_WEBHOOK_SECRET;
-
-    if (webhookSecret && signature) {
-      // In a real implementation, you would verify the signature using Clerk's SDK
-      // For now, we'll skip signature verification in development
-      if (process.env.NODE_ENV === "production") {
-        // TODO: Implement proper signature verification
-        // const isValid = await clerk.webhooks.verifySignature(payload, signature, webhookSecret);
-        // if (!isValid) return reply.status(401).send({ error: "unauthorized", message: "Invalid webhook signature" });
-      }
-    }
+    const webhookSecret = secret;
+    if (!webhookSecret) return reply.status(503).send({ error: "service_unavailable", message: "Webhook verification is not configured" });
+    const header = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+    const signatureValid = verifyClerkWebhookSignature({
+      secret: webhookSecret,
+      id: header(request.headers["svix-id"]),
+      timestamp: header(request.headers["svix-timestamp"]),
+      signature: header(request.headers["svix-signature"]),
+      rawBody: request.rawBody,
+    });
+    if (!signatureValid) return reply.status(401).send({ error: "unauthorized", message: "Invalid webhook signature" });
 
     const event = request.body as z.infer<typeof clerkWebhookEventZod>;
 
@@ -65,13 +71,13 @@ export async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
         case "user.created":
         case "user.updated": {
           const userData = event.data;
-          const email = userData.email_addresses[0]?.email_address;
+          const email = userData.email_addresses?.[0]?.email_address;
           
           if (!email) {
             return reply.status(400).send({ error: "invalid_data", message: "User email not found" });
           }
 
-          await prisma.user.upsert({
+          await db.user.upsert({
             where: { clerkId: userData.id },
             create: {
               clerkId: userData.id,
@@ -87,7 +93,7 @@ export async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
         }
         case "user.deleted": {
           const userData = event.data;
-          await prisma.user.deleteMany({
+          await db.user.deleteMany({
             where: { clerkId: userData.id },
           });
           break;
@@ -98,12 +104,15 @@ export async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
       }
 
       return { received: true as const };
-    } catch (error) {
-      app.log.error({ err: error, eventType: event.type }, "Clerk webhook handler failed");
+    } catch {
+      app.log.error({ eventType: event.type }, "Clerk webhook handler failed");
       return reply.status(500).send({
         error: "webhook_failed",
         message: "Failed to process webhook event",
       });
     }
   });
+};
 }
+
+export const clerkWebhookRoutes = createClerkWebhookRoutes();

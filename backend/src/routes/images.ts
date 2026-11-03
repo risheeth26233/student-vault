@@ -11,7 +11,7 @@ const generateSchemaZod = z.object({
   steps: z.number().min(1).max(100).optional(),
   guidanceScale: z.number().min(1).max(20).optional(),
   seed: z.number().optional(),
-  model: z.string().optional(),
+  model: z.enum(["fal-ai/flux/dev", "fal-ai/flux/schnell", "fal-ai/stable-diffusion-v3-medium", "dall-e-2", "dall-e-3"]).optional(),
   format: z.enum(["png", "jpeg", "webp"]).optional().default("png"),
 });
 
@@ -22,7 +22,7 @@ const generatedImageZod = z.object({
   width: z.number(),
   height: z.number(),
   prompt: z.string(),
-  seed: z.number(),
+  seed: z.number().optional(),
 });
 
 const generateResponseZod = z.object({
@@ -38,7 +38,8 @@ const errorResponseSchema = toJsonSchema(errorResponseZod);
 const statusResponseZod = z.object({ configured: z.boolean() });
 const statusResponseSchema = toJsonSchema(statusResponseZod);
 
-export async function imagesRoutes(app: FastifyInstance): Promise<void> {
+export function createImagesRoutes(service = imageService) {
+return async function imagesRoutes(app: FastifyInstance): Promise<void> {
   // Generate image
   app.post("/api/images/generate", {
     schema: {
@@ -54,7 +55,7 @@ export async function imagesRoutes(app: FastifyInstance): Promise<void> {
   }, async (request, reply) => {
     try {
       const options = request.body as ImageGenerationOptions;
-      const response = await imageService.generate(options);
+      const response = await service.generate(options);
       return response;
     } catch (error) {
       if (error instanceof Error && error.message.includes("not configured")) {
@@ -63,7 +64,7 @@ export async function imagesRoutes(app: FastifyInstance): Promise<void> {
           message: "Image generation service is not configured. Please set FAL_API_KEY or OPENAI_API_KEY.",
         });
       }
-      throw error;
+      return reply.status(502).send({ error: "provider_failed", message: "Image generation failed. Try again later." });
     }
   });
 
@@ -77,6 +78,8 @@ export async function imagesRoutes(app: FastifyInstance): Promise<void> {
       },
     },
   }, async () => {
-    return { configured: imageService.isConfigured() };
+    return { configured: service.isConfigured() };
   });
+};
 }
+export const imagesRoutes = createImagesRoutes();

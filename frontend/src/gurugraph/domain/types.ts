@@ -66,7 +66,11 @@ export type LearningSignalKind =
   | 'assignment_outcome'
   | 'attendance_session'
   | 'study_activity'
-  | 'resource_activity';
+  | 'resource_activity'
+  /** Phase 3: a checked handwritten evaluation, practice or reassessment
+   *  answer with a definite outcome (binary), or a recorded-but-ungraded
+   *  observation (outcome `none`). */
+  | 'practice_outcome';
 
 export type SignalSourceType =
   | 'topic'
@@ -74,7 +78,9 @@ export type SignalSourceType =
   | 'assignment'
   | 'attendance'
   | 'resource'
-  | 'subject_registry';
+  | 'subject_registry'
+  /** Phase 3 handwritten-work records (evidence pointers only). */
+  | 'handwriting';
 
 /** Pointer back to the exact Student-Vault record a signal came from. */
 export interface EvidenceRef {
@@ -164,6 +170,9 @@ export interface GuruGraphDataSource {
   resources?: readonly unknown[];
   /** Subject registry from `sv_subjects` (subjects with no topic yet). */
   subjectRegistry?: readonly string[];
+  /** Phase 3: slim handwritten-practice evidence records (outcomes only — no
+   *  confirmed text, answers or images ever enter the intelligence layer). */
+  handwriting?: readonly unknown[];
 }
 
 export interface IngestReport {

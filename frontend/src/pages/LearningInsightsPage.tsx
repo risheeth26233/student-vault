@@ -17,6 +17,7 @@ import { useGuruGraphIntelligence } from '../gurugraph';
 import { buildInsightsViewModel } from '../features/insights/insightsViewModel';
 import { MasteryCard } from '../features/insights/MasteryCard';
 import { GapCard } from '../features/insights/GapCard';
+import { PracticeEvidenceSection } from '../features/insights/PracticeEvidenceSection';
 
 function InsightsSkeleton() {
   return (
@@ -244,6 +245,8 @@ export function LearningInsightsPage() {
                 </div>
               )}
             </Section>
+
+            <PracticeEvidenceSection />
 
             <Section
               title="Supported gap categories"

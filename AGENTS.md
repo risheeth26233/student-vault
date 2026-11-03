@@ -8,11 +8,11 @@ The project has exactly seven major phases. This roadmap is locked — do not ad
 |---|-------|--------|
 | 1 | Student-Vault Foundation | ✅ COMPLETE |
 | 2 | GuruGraph Learning Intelligence | ✅ IMPLEMENTED (deterministic read-only foundation + Learning Insights UI) |
-| 3 | Adaptive & Handwritten Intelligence | ⬜ NOT STARTED |
-| 4 | Teacher Intelligence | ⬜ NOT STARTED |
-| 5 | Intervention & Student–Teacher Loop | ⬜ NOT STARTED |
-| 6 | AI Study & Academic Ecosystem | ⬜ NOT STARTED |
-| 7 | Production & Intelligence Maturity | ⬜ NOT STARTED |
+| 3 | Adaptive & Handwritten Intelligence | ✅ COMPLETE |
+| 4 | Teacher Intelligence | 🚧 IN PROGRESS |
+| 5 | Intervention & Student–Teacher Loop | 🚧 IN PROGRESS |
+| 6 | AI Study & Academic Ecosystem | 🚧 IN PROGRESS |
+| 7 | Production & Intelligence Maturity | 🚧 HARDENING IN PROGRESS; DATABASE/DEPLOYMENT VERIFICATION REMAINS |
 
 **Phase gate rule:** Phase 3+ functionality must not be implemented until explicitly authorized. Phase 2 is complete to the extent verified by the test/build/lint suites below.
 
@@ -123,7 +123,30 @@ The project has exactly seven major phases. This roadmap is locked — do not ad
 
 ---
 
-## GuruGraph Deferred Boundary (Phase 3+)
+## Phase 3 — Adaptive & Handwritten Intelligence (Implemented)
+
+**What Phase 3 added (honest, deterministic, local-first):**
+- **Workflow UI** — route `/handwriting` ("Practice" in sidebar + tablet drawer; mobile bottom nav stays the original five items). Submission composer: subject/topic selection, multi-page image upload (≤8 pages, ≤8MB each, JPEG/PNG/WebP), dismissible per-file rejection reasons (never silent), upload retry queue for failed files, previews from resource storage, two-step page removal. Flow states: extraction review → evaluation → practice/reassessment → progress timeline, all on the same submission record.
+- **Backend OCR boundary (stateless, consent-enforced)** — `GET /api/handwriting/status`, `POST /api/handwriting/extract` (≤8 pages, mime/size validated server-side, `consent: true` required → otherwise 400 `consent_required`). `OcrProvider` interface in `backend/src/services/ocr.ts`; `UnavailableOcrProvider` is the default; `OpenAiVisionOcrProvider` only when `OPENAI_API_KEY` is set and `OCR_PROVIDER=openai`. Unconfigured → 503 `ocr_unavailable`; the frontend then offers manual transcription. No fake engines, no keys shipped.
+- **Local-first records** — `sv_handwriting` localStorage envelope (version 1). Page images reuse the existing resource blob storage (IndexedDB/R2) — image bytes never enter localStorage.
+- **Evaluation (deterministic, `features/handwriting/evaluation.ts`)** — six distinguishable states: `confirmed_error`, `plausible_gap`, `insufficient_evidence`, `extraction_failure`, `evaluation_unavailable`, `no_gap`. Matching final answers are explicitly *not* proof of reasoning; the reserved `confirmed_misconception` state is never emitted. Observed facts and inferred conclusions render as separate labelled groups with confidence + caveat on every outcome. Re-confirmed text after an evaluation marks it stale until re-run.
+- **Adaptive practice (`practiceEngine.ts`)** — deterministic question templates generated from topic title/notes + evaluation gaps + GuruGraph gaps (read-only); provenance labelled "generated · not syllabus-verified"; automatic coverage check with visible limitations; duplicate-answer rejection; stretch question locked until a first passing attempt; reassessment path; attempts recorded per submission.
+- **Progress (`progressModel.ts`)** — only definite observations (definite evaluations + graded attempts) support direction claims; uncertain/stale/ungraded evidence is excluded and the exclusions are stated; without a definite baseline the summary honestly reports `not_enough_evidence`.
+- **GuruGraph integration** — `LearningSignalKind: 'practice_outcome'` (weight 0.7), `SignalSourceType: 'handwriting'`; ungraded attempts contribute nothing to mastery; Learning Insights gains a "Handwritten practice" evidence section linking back to the workflow. Phase 2 classification meanings are unchanged; `IngestReport.accepted` shape unchanged.
+- **Testing** — `npm run test` = 212 tests: all Phase 1/2 suites unmodified plus handwriting validation, evaluation states, practice engine, extraction service (incl. retry-never-resends-confirmed-pages), local store (duplicate prevention, persistence across reload), evidence/progress models, GuruGraph practice-outcome wiring, and jsdom component tests (composer, extraction review, evaluation/practice/progress panels, page orchestration, navigation five-item rule, insights evidence section).
+
+**Phase 3 boundaries (deferred to later phases — NOT implemented):**
+- Teacher intelligence (Phase 4)
+- Intervention & student–teacher loop (Phase 5)
+- AI study ecosystem features beyond the above (Phase 6)
+- Emitted `confirmed_misconception` states (reserved until justified)
+- No backend persistence models were added — records are local-first by design.
+
+**Verification:** frontend tests passed 212 cases; backend OCR route tests cover the auth boundary, consent, validation, provider fallback/success/failure. Frontend and backend builds, typechecks and lint commands were run. Real OpenAI OCR behavior still requires credentials to verify.
+
+---
+
+## GuruGraph Deferred Boundary (Phase 4+)
 
 **Architecture Preparation (done in Phase 1):**
 - `frontend/src/features/` structure for feature modules
@@ -132,18 +155,24 @@ The project has exactly seven major phases. This roadmap is locked — do not ad
 - Shared types in `frontend/src/types/gurugraph.ts` (empty for now)
 - Event bus for Coach orchestration (extend existing sync events)
 
-**Still deferred beyond Phase 2 (not implemented):**
+**Still deferred beyond the current Phase 3–7 checkpoint:**
 - Full knowledge-graph intelligence / visualization
-- Misconception engine (a deterministic *candidate* gap state is reserved but never emitted in Phase 2)
+- Misconception engine (a deterministic *candidate* gap state is reserved but never emitted)
 - Diagnostician / Examiner / Curator / Analyst agents
 - Coach orchestration
-- Adaptive practice
-- Handwriting diagnosis
 - Teacher intelligence
 - Interventions
 - AI Study Assistant (beyond current chat)
 
-Note: the deterministic **mastery engine** and **gap classification** DID ship in Phase 2 (see the Phase 2 section above) — they are the read-only foundation, not the deferred intelligence.
+Note: the deterministic **mastery engine** and **gap classification** shipped in Phase 2 (see the Phase 2 section above); the adaptive **practice engine**, **handwritten-work workflow** and **OCR boundary** shipped in Phase 3 (see the Phase 3 section above) — all read-only/deterministic foundations, not the deferred intelligence.
+
+## Phases 4–7 — Current implementation checkpoint
+
+- Phase 4 adds Clerk-ID allowlisted teacher roles, owned classrooms, explicit student join-code enrollment, role- and ownership-scoped teacher APIs, individual student evidence, and class-level counts of recorded topic statuses. Counts are observations; mastery and learning-gap summaries are not persisted server-side.
+- Phase 5 adds teacher-proposed and reviewed plans, student lifecycle updates, transition events, latest topic-assessment baselines, paired student-entered reassessment scores, cautious percentage-point comparisons, and teacher feedback. A score comparison does not establish causal impact.
+- Phase 6 has typed provider-backed chat and a local-only deterministic study scaffold when no provider is configured. Saved notes remain local by default. Selected resources support local PDF extraction and page retrieval; explicitly opted-in retrieved excerpts can be sent to a configured provider. Invalid or unrecognized citations fall back to actual excerpts.
+- Phase 7 adds Svix webhook signature verification, bounded request rates, provider timeouts, AI input limits, sanitized request error logging, and CORS support for PATCH. Rate limits are in-memory per process. Real migrations and persistence tests passed on an isolated PostgreSQL database on 2026-11-02. Deployment verification remains required before claiming production readiness.
+- Both migrations were applied to a disposable local student_vault_test database; live schema comparison found no difference and persistence/rollback tests passed. The configured remote database was not contacted. See docs/PROJECT_PROGRESS.md for current verification and docs/DEPLOYMENT.md for release prerequisites.
 
 ---
 
@@ -166,7 +195,7 @@ cd frontend
 npm run dev          # Vite dev server (proxies /api to backend:3000)
 npm run build        # Production build
 npm run lint         # Oxlint
-npm run test         # Vitest (GuruGraph unit + Learning Insights UI tests)
+npm run test         # Vitest (GuruGraph unit + Learning Insights + handwriting workflow tests)
 npm run preview      # Preview production build
 
 # Legacy (root)
@@ -186,6 +215,10 @@ CLERK_WEBHOOK_SECRET=whsec_...
 FRONTEND_URL=http://localhost:5173
 # Optional services:
 OPENAI_API_KEY=...
+# Handwriting OCR (Phase 3) — provider-independent; without these the app
+# offers manual transcription and reports extraction as unavailable:
+OCR_PROVIDER=none     # 'openai' | 'none' — requires OPENAI_API_KEY
+OCR_MODEL=gpt-4o-mini # optional override for the vision model
 ANTHROPIC_API_KEY=...
 YOUTUBE_API_KEY=...
 BRAVE_SEARCH_API_KEY=...

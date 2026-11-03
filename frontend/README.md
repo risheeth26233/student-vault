@@ -1,32 +1,17 @@
-# React + TypeScript + Vite
+# Student-Vault React application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The primary application is React, TypeScript, Vite, TanStack Query, and Tailwind CSS. Vite serves it below `/app`; the root legacy vanilla-JavaScript application is retained as a fallback.
 
-Currently, two official plugins are available:
+## Commands
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
+npm run test -- --pool=threads --maxWorkers=1
+npm run lint
+npm run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The dev server proxies `/api` to `http://localhost:3000`. Set `VITE_API_BASE` only when the backend uses another API origin.
+
+Handwriting records are local-first and use the backend OCR endpoint only after explicit consent. The AI assistant never attaches saved notes or documents automatically. In the study page, the student can select up to four topic resources; PDF excerpts are retrieved on the Student-Vault backend and remain there unless the student enables external-sharing consent. Selected images may be sent to a configured OCR provider after that consent. The UI shows retrieved excerpts and extraction/provider errors separately from the generated answer. Teacher-only records are authorized on the backend, not by navigation visibility.
