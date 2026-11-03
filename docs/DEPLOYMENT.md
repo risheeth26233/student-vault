@@ -1,6 +1,6 @@
 # Deployment and recovery
 
-Use Node 22.12 or newer, Python 3.12 with `backend/requirements-documents.txt`, and PostgreSQL. Run `npm ci`, `npm run prisma:generate`, and `npm run build` in backend; run `npm ci` and `npm run build` in frontend. CI provisions a disposable PostgreSQL 17 database and runs the migration, persistence, and regression checks. The workflow requires no real provider or Clerk credentials; its database password is exclusively for the disposable CI service.
+Use Node 22.12 or newer, Python 3.12 with `backend/requirements-documents.txt`, and PostgreSQL. Run `npm ci`, `npm run prisma:generate`, and `npm run build` in backend; run `npm ci` and `npm run build` in frontend. CI initializes a disposable native PostgreSQL cluster on loopback port 55439 and runs the migration, persistence, and regression checks. It uses the runner's PostgreSQL package, prints its version and server identity, and stops the cluster afterward. Loopback trust authentication is restricted to this disposable CI setup. The workflow requires no real provider or Clerk credentials. Frontend tests run in the test environment; the build runs with `NODE_ENV=production`.
 
 Configure runtime secrets through the host's secret manager: `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `CLERK_WEBHOOK_SECRET`, and `FRONTEND_URL`. Set `NODE_ENV=production`, `PORT`, and the explicit `TEACHER_CLERK_IDS` allowlist. Optional integrations are documented in the backend README. Never bake `.env` into an image or publish it with frontend files.
 

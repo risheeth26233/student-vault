@@ -2,6 +2,10 @@
 
 Last verified: 2026-11-03
 
+## CI follow-up
+
+GitHub Actions run 41653184627 applied both migrations and found no schema drift, but the database test correctly rejected Docker's bridge-side server address despite a loopback client URL. CI now creates a native disposable PostgreSQL cluster on loopback rather than weakening that assertion. The workflow also sets a 20-minute job deadline and explicitly builds the frontend with the production environment. Results of the replacement run must be checked after pushing; a successful local run alone does not establish CI success.
+
 ## Latest implementation and publication checkpoint — 2026-11-03
 
 - Replaced the remaining Images and Sync placeholder pages with API-backed interfaces. Image prompts require explicit sharing consent; unavailable, loading, failure and empty-result states are visible. Results are session-only and may expire; users can open images to save them.
