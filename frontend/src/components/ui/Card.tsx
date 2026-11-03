@@ -7,7 +7,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 
 const cardVariants = cva(
-  'rounded-xl border bg-surface transition-shadow duration-150',
+  'sv-card rounded-xl border bg-surface',
   {
     variants: {
       elevation: {
@@ -17,7 +17,7 @@ const cardVariants = cva(
         3: 'shadow-[0_12px_28px_rgba(41,71,62,0.12),0_4px_8px_rgba(41,71,62,0.08)]',
       },
       interactive: {
-        true: 'hover:shadow-[0_12px_28px_rgba(41,71,62,0.12),0_4px_8px_rgba(41,71,62,0.08)] cursor-pointer',
+        true: 'sv-card-interactive hover:shadow-[0_12px_28px_rgba(41,71,62,0.12),0_4px_8px_rgba(41,71,62,0.08)] cursor-pointer',
         false: '',
       },
       padding: {

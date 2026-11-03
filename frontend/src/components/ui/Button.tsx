@@ -7,10 +7,10 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center font-semibold transition-all duration-150 ' +
+  'sv-button inline-flex items-center justify-center font-semibold ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ' +
   'disabled:opacity-50 disabled:pointer-events-none ' +
-  'active:scale-[0.98]',
+  'motion-safe:active:scale-[0.98]',
   {
     variants: {
       variant: {
@@ -48,6 +48,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={cn(buttonVariants({ variant, size, className }))}
         disabled={disabled || loading}
+        aria-busy={loading || undefined}
         {...props}
       >
         {loading && (

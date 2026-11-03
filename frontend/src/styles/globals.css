@@ -585,3 +585,40 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-ink-muted);
 }
+
+/* Quiet interaction details: only composite motion, no moving layout. */
+.sv-button {
+  transition: transform 160ms cubic-bezier(.22,1,.36,1), background-color 160ms ease,
+    box-shadow 200ms ease, color 160ms ease, border-color 160ms ease;
+}
+.sv-card {
+  transition: transform 240ms cubic-bezier(.22,1,.36,1), box-shadow 240ms ease, border-color 200ms ease;
+}
+.sv-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.45) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: sv-shimmer 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sv-shimmer {
+  to { transform: translateX(100%); }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .sv-button:not(:disabled):hover { transform: translateY(-1px); }
+  .sv-button:not(:disabled):active { transform: translateY(0) scale(.98); }
+  .sv-card-interactive:hover { transform: translateY(-3px); }
+  .sidebar-nav-item-icon { transition: transform 200ms cubic-bezier(.22,1,.36,1); }
+  .sidebar-nav-item:hover .sidebar-nav-item-icon { transform: translateX(2px); }
+  .nav-indicator { animation: sv-indicator 220ms cubic-bezier(.22,1,.36,1); transform-origin: center; }
+}
+@keyframes sv-indicator {
+  from { opacity: 0; transform: scaleY(.4); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-skeleton::after { animation: none; display: none; }
+  .sv-button, .sv-card { transition: none; }
+}

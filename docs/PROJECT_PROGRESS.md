@@ -2,6 +2,12 @@
 
 Last verified: 2026-11-03
 
+## UI motion refinement — 2026-11-03
+
+Route transitions now animate only protected page content, keeping the sidebar/topbar and their state mounted. Removed the exit-animation wait and corrected transition configuration. Shared buttons have restrained hover/press feedback and expose loading state via `aria-busy`; interactive cards lift slightly, navigation icons/active indicators have small motion, and skeletons shimmer softly. Decorative motion respects reduced-motion preferences, and hover motion is restricted to fine pointers. The media-query hook now reads the preference on the first render and uses a stable external-store subscription, including cleanup and preference-change coverage.
+
+All **229 tests across 30 frontend files passed** on the final serial rerun. Production build/typecheck and lint passed (existing React warnings remain); diff validation passed. The main entry bundle is 433.55 kB and offline precache is 1039.63 KiB. A preliminary Windows run ended with a native process crash before its final report; focused navigation/preference tests and the complete rerun passed. Browser visual review was stopped by the computer-use tool because it could not reliably determine Chrome's current URL; no visual or animation-frame validation is claimed. The merged main branch's earlier GitHub run 41655374556 passed backend/database/frontend verification. Live Clerk/provider/deployment verification remains outstanding.
+
 ## CI follow-up
 
 GitHub Actions run 41653184627 applied both migrations and found no schema drift, but the database test correctly rejected Docker's bridge-side server address despite a loopback client URL. CI now creates a native disposable PostgreSQL cluster on loopback rather than weakening that assertion. The workflow also sets a 20-minute job deadline and explicitly builds the frontend with the production environment. A subsequent startup failure was corrected by placing the Unix socket in the runner-owned data directory and adding startup diagnostics.

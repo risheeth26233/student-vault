@@ -1,22 +1,16 @@
 // Media Query Hook
 // For responsive behavior
 
-import { useState, useEffect } from 'react';
+import { useMemo, useCallback, useSyncExternalStore } from 'react';
 
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
-    }
-    const listener = () => setMatches(media.matches);
-    media.addEventListener('change', listener);
-    return () => media.removeEventListener('change', listener);
-  }, [matches, query]);
-
-  return matches;
+  const media = useMemo(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia(query) : null, [query]);
+  const subscribe = useCallback((listener: () => void) => {
+    media?.addEventListener('change', listener);
+    return () => media?.removeEventListener('change', listener);
+  }, [media]);
+  return useSyncExternalStore(subscribe, () => media?.matches ?? false, () => false);
 }
 
 // Common breakpoint hooks

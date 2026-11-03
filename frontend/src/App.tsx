@@ -92,7 +92,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function PageOutlet() {
   const location = useLocation();
-  return <PageBoundary key={location.pathname}><Outlet /></PageBoundary>;
+  return <AnimatedRoutes><PageBoundary key={location.pathname}><Outlet /></PageBoundary></AnimatedRoutes>;
 }
 
 export function App() {
@@ -106,7 +106,6 @@ export function App() {
         <ToastProvider>
           <NotificationProvider>
             <BrowserRouter basename="/app">
-            <AnimatedRoutes>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<WelcomePage />} />
@@ -145,7 +144,6 @@ export function App() {
                 {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </AnimatedRoutes>
             </BrowserRouter>
           </NotificationProvider>
         </ToastProvider>

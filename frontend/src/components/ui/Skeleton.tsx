@@ -7,7 +7,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 
 const skeletonVariants = cva(
-  'animate-pulse bg-border rounded relative overflow-hidden',
+  'sv-skeleton bg-border rounded relative overflow-hidden',
   {
     variants: {
       variant: {
