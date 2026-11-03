@@ -66,6 +66,9 @@ describe('navigation entries', () => {
     renderNav();
 
     const drawer = screen.getByLabelText('Navigation drawer');
+    expect(drawer.getAttribute('aria-hidden')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
+    expect(drawer.getAttribute('aria-hidden')).toBe('false');
     expect(within(drawer).getByRole('button', { name: 'Practice' })).toBeTruthy();
 
     fireEvent.click(within(drawer).getByRole('button', { name: 'Practice' }));

@@ -1,3 +1,4 @@
+import { InterventionEditor, type InterventionEdit } from '../features/teacher/InterventionEditor';
 import { useEffect, useState } from 'react';
 import { Users, BookOpen, RefreshCw } from 'lucide-react';
 import { PageContainer, ContentWrapper } from '../components/layout/AppLayout';
@@ -8,6 +9,7 @@ import { teacherApi, type TeacherClass, type TeacherStudent, type InterventionRe
 type ApiError = Error & { status?: number };
 
 export function TeacherPage() {
+  const [editor, setEditor] = useState<InterventionEdit | null>(null);
   const [classes, setClasses] = useState<TeacherClass[]>([]);
   const [selected, setSelected] = useState<TeacherClass | null>(null);
   const [students, setStudents] = useState<TeacherStudent[]>([]);
@@ -90,43 +92,15 @@ export function TeacherPage() {
     } catch (e) { setError((e as Error).message); }
   }
 
-  async function addTeacherFeedback(id: string) {
-    const feedback = window.prompt('Feedback for the student:');
-    if (!feedback?.trim()) return;
-    try {
-      await teacherApi.addInterventionFeedback(id, feedback.trim());
-      if (selected) setInterventions((await teacherApi.classInterventions(selected.id)).interventions);
-    } catch (e) { setError((e as Error).message); }
-  }
-
-  async function reviewStudentOutcome(id: string) {
-    const feedback = window.prompt('Review feedback for the student:');
-    if (!feedback?.trim()) return;
-    const followUpRequired = window.confirm('Is another teacher follow-up action required?');
-    try {
-      await teacherApi.reviewInterventionOutcome(id, feedback.trim(), followUpRequired);
-      if (selected) setInterventions((await teacherApi.classInterventions(selected.id)).interventions);
-    } catch (e) { setError((e as Error).message); }
-  }
-
+  function addTeacherFeedback(id: string) { setEditor({ id, mode: 'feedback' }); }
+  function reviewStudentOutcome(id: string) { setEditor({ id, mode: 'review' }); }
   async function updateStudentIntervention(id: string, status: 'in_progress' | 'completed') {
+    if (status === 'completed') { setEditor({ id, mode: 'complete', hasTopic: Boolean(interventions.find(plan => plan.id === id)?.topicId) }); return; }
     try {
-      const outcomeNote = status === 'completed' ? window.prompt('Briefly describe what you completed or learned:') : undefined;
-      if (status === 'completed' && !outcomeNote?.trim()) return;
-      const plan = interventions.find((item) => item.id === id);
-      let followUpScore: number | undefined;
-      let followUpMaxScore: number | undefined;
-      if (status === 'completed' && plan?.topicId) {
-        const score = window.prompt('Enter your reassessment score (from the same topic):');
-        const maximum = window.prompt('Enter the maximum possible reassessment score:');
-        if (score === null || maximum === null || !/^\d+$/.test(score) || !/^\d+$/.test(maximum) || Number(maximum) < 1 || Number(score) > Number(maximum)) return;
-        followUpScore = Number(score); followUpMaxScore = Number(maximum);
-      }
-      await teacherApi.updateMyIntervention(id, status, outcomeNote ?? undefined, followUpScore, followUpMaxScore);
+      await teacherApi.updateMyIntervention(id, status);
       setInterventions((await teacherApi.myInterventions()).interventions);
     } catch (e) { setError((e as Error).message); }
   }
-
   function scoreComparison(plan: InterventionRecord) {
     if (plan.baselineScore == null || plan.baselineMaxScore == null) return 'No topic-linked baseline assessment was available when this plan was created.';
     const baseline = Math.round((plan.baselineScore / plan.baselineMaxScore) * 100);
@@ -206,7 +180,16 @@ export function TeacherPage() {
             </section>}
           </div>
         )}
-      </ContentWrapper>
+      {editor && <InterventionEditor key={`${editor.id}:${editor.mode}`} edit={editor} onClose={() => setEditor(null)} onSave={async values => {
+  if (editor.mode === 'complete') {
+    await teacherApi.updateMyIntervention(editor.id, 'completed', values.note, values.score, values.maximum);
+    setInterventions((await teacherApi.myInterventions()).interventions);
+  } else {
+    if (editor.mode === 'review') await teacherApi.reviewInterventionOutcome(editor.id, values.note, values.followUp);
+    else await teacherApi.addInterventionFeedback(editor.id, values.note);
+    if (selected) setInterventions((await teacherApi.classInterventions(selected.id)).interventions);
+  }
+}} />}</ContentWrapper>
     </PageContainer>
   );
 }

@@ -36,8 +36,8 @@ export function Sidebar() {
   const { user, profile, isAuthenticated, signOut, setProfile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed');
@@ -48,6 +48,7 @@ export function Sidebar() {
 
   useEffect(() => {
     localStorage.setItem('sidebar-collapsed', String(collapsed));
+    window.dispatchEvent(new Event('sv:sidebar-change'));
   }, [collapsed]);
 
   useEffect(() => {
@@ -83,8 +84,7 @@ export function Sidebar() {
 
       <aside 
         className={cn('sidebar', collapsed && 'sidebar-collapsed')} 
-        role="navigation" 
-        aria-label="Main navigation"
+        aria-label="Workspace sidebar"
         data-collapsed={collapsed}
       >
         <div className={cn('flex items-center justify-between h-16 px-3 border-b border-border', collapsed && 'justify-center px-0')}>

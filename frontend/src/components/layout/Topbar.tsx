@@ -7,7 +7,7 @@ import {
   Menu, X, Cloud, LogOut, User, Search, 
   Wifi, WifiOff, ChevronDown, Settings, BookOpen,
   Calendar, Video, MessageSquare, Image, Gauge, Calculator, NotebookPen, FileText,
-  Timer, ClipboardList, TrendingUp
+  Timer, ClipboardList, TrendingUp, Lightbulb, PenLine, Users
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '../../lib/utils';
@@ -29,6 +29,9 @@ const navItems = [
   { id: 'assignments', label: 'Assignments', href: '/assignments', icon: ClipboardList },
   { id: 'attendance', label: 'Attendance', href: '/attendance', icon: Calendar },
   { id: 'performance', label: 'Performance', href: '/performance', icon: TrendingUp },
+  { id: 'insights', label: 'Learning Insights', href: '/insights', icon: Lightbulb },
+  { id: 'handwriting', label: 'Practice', href: '/handwriting', icon: PenLine },
+  { id: 'teacher', label: 'Classes & follow-ups', href: '/teacher', icon: Users },
   { id: 'calculator', label: 'Calculator', href: '/calculator', icon: Calculator },
   { id: 'study', label: 'Study Mode', href: '/study', icon: Timer },
   { id: 'youtube', label: 'YouTube', href: '/youtube', icon: Video },
@@ -106,7 +109,7 @@ export function Topbar() {
 
             <button 
               onClick={() => handleNavigation('/vault')}
-              className="flex items-center gap-3 text-ink font-extrabold text-lg"
+              className="flex items-center gap-3 text-ink font-extrabold text-lg lg:hidden"
               aria-label="Student Vault home"
             >
               <span className="brand-mark" aria-hidden="true">

@@ -1,7 +1,7 @@
 // Main Layout Component
 // App shell with sidebar, topbar, and content area
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileNavigation } from './MobileNavigation';
@@ -34,7 +34,12 @@ export function AppLayout({ children, className }: AppLayoutProps) {
       }
     };
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    const handleSidebarChange = () => setSidebarCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
+    window.addEventListener('sv:sidebar-change', handleSidebarChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('sv:sidebar-change', handleSidebarChange);
+    };
   }, []);
 
   // Show loading state while auth is initializing
@@ -47,7 +52,7 @@ export function AppLayout({ children, className }: AppLayoutProps) {
   }
 
   return (
-    <div className={cn('min-h-screen bg-canvas', className)}>
+    <div className={cn('sv-workspace min-h-screen bg-canvas', className)} style={{ '--sv-sidebar-width': sidebarCollapsed ? '4rem' : '16rem' } as CSSProperties}>
       {/* Skip Link for Accessibility */}
       <a 
         href="#main-content" 
@@ -89,7 +94,7 @@ interface PageContainerProps {
 
 export function PageContainer({ children, className, header }: PageContainerProps) {
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn('sv-page space-y-7', className)}>
       {header && (
         <header className="page-header">
           {header}

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: Gauge },
@@ -40,6 +40,15 @@ export function MobileNavigation() {
   const navigate = useNavigate();
   const { user, profile, isAuthenticated, signOut } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerTrigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setDrawerOpen(false); drawerTrigger.current?.focus(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawerOpen]);
 
   const handleNavigation = (href: string) => {
     navigate(href);
@@ -91,6 +100,9 @@ export function MobileNavigation() {
   // Tablet: Drawer navigation (768px - 1023px)
   return (
     <>
+      <button ref={drawerTrigger} type="button" onClick={() => setDrawerOpen(true)} aria-label="Open navigation" aria-controls="tablet-navigation-drawer" aria-expanded={drawerOpen} className="fixed bottom-5 left-5 z-30 inline-flex min-h-12 items-center gap-2 rounded-full bg-teal-600 px-5 text-white shadow-lg">
+        <Menu className="h-5 w-5" aria-hidden="true" /> Navigate
+      </button>
       <div 
         className={cn('mobile-drawer-overlay', drawerOpen && 'mobile-drawer-overlay-visible')} 
         onClick={() => setDrawerOpen(false)}
@@ -98,7 +110,10 @@ export function MobileNavigation() {
       />
 
       <aside 
+        id="tablet-navigation-drawer"
         className={cn('mobile-drawer', drawerOpen ? 'mobile-drawer-open' : 'mobile-drawer-closed')} 
+        inert={!drawerOpen}
+        aria-hidden={!drawerOpen}
         role="navigation" 
         aria-label="Navigation drawer"
       >

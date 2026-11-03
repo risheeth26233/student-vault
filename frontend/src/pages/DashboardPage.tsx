@@ -22,7 +22,7 @@ import { format, isBefore, addDays } from 'date-fns';
 import { useMemo } from 'react';
 
 export function DashboardPage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, profile } = useAuth();
   
   const { data: topicsData, isLoading: topicsLoading } = useTopics({ limit: 50 });
   const { data: attendanceData, isLoading: attendanceLoading } = useAttendanceStats();
@@ -144,11 +144,23 @@ export function DashboardPage() {
 
   return (
     <PageContainer>
-      <ContentWrapper className="max-w-6xl">
+      <ContentWrapper className="sv-dashboard max-w-6xl space-y-6">
         <header className="page-header">
           <h1 className="text-3xl font-extrabold text-ink">Dashboard</h1>
           <p className="text-ink-muted">Your study overview for today</p>
         </header>
+
+        <section className="sv-focus-panel" aria-label="Today's study focus">
+          <div>
+            <p className="sv-eyebrow">Your learning workspace</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">Make room for a little progress{profile?.name && !profile.guest ? `, ${profile.name.split(' ')[0]}` : ''}.</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed">{stats.openAssignments[0] ? `Next up: ${stats.openAssignments[0].title}. Review your upcoming work, then focus on one topic.` : stats.totalTopics ? 'Choose a topic, revisit your notes, and check your understanding with a short practice session.' : 'Start with one subject and one topic. Your study overview will grow from the work you record.'}</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link to={stats.totalTopics ? '/study' : '/vault'}><Button>{stats.totalTopics ? 'Start a study session' : 'Add your first topic'}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button></Link>
+            <Link to="/insights"><Button variant="outline">Learning Insights</Button></Link>
+          </div>
+        </section>
 
         {/* Stats Grid */}
         <Section>
@@ -466,8 +478,8 @@ export function DashboardPage() {
           </Section>
 
           {/* Quick Actions */}
-          <Section title="Quick Actions">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Section title="Quick Actions" className="lg:col-span-2">
+            <div className="sv-quick-actions grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <Link to="/vault" className="group">
                 <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
                   <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-teal-100 transition-colors">

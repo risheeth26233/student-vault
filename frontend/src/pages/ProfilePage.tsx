@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PageContainer, ContentWrapper } from '../components/layout/AppLayout';
-import { User, Save, Loader2, Camera, X } from 'lucide-react';
+import { User, Save, Loader2, X } from 'lucide-react';
 import { useState, useCallback } from 'react';
 
 export function ProfilePage() {
@@ -70,17 +70,10 @@ export function ProfilePage() {
                 <div className="w-24 h-24 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-2xl">
                   {initials}
                 </div>
-                <button 
-                  className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 transition-colors"
-                  aria-label="Change avatar"
-                  disabled={!saving}
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-semibold text-ink">Profile Information</h2>
-                <p className="text-ink-muted text-sm mt-1">Update your display name and email</p>
+                <p className="text-ink-muted text-sm mt-1">Manage your local display profile. Account identity and avatar are managed through your sign-in provider.</p>
               </div>
             </div>
 
@@ -142,7 +135,7 @@ export function ProfilePage() {
               <div className="flex justify-between">
                 <dt className="text-ink-muted">Profile Stored</dt>
                 <dd className="text-ink">
-                  {profile ? 'localStorage (synced to cloud when signed in)' : 'Not saved'}
+                  {profile ? 'This browser (local storage)' : 'Not saved'}
                 </dd>
               </div>
             </dl>

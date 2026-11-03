@@ -20,6 +20,7 @@ export function AIPage() {
   const [error, setError] = useState('');
   const [providers, setProviders] = useState<string[] | null>(null);
   const [providerError, setProviderError] = useState('');
+  const [providerRefresh, setProviderRefresh] = useState(0);
   const [topicId, setTopicId] = useState('');
   const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
   const [shareDocumentsWithProvider, setShareDocumentsWithProvider] = useState(false);
@@ -39,9 +40,9 @@ export function AIPage() {
   useEffect(() => {
     let active = true;
     aiApi.providers().then((result) => { if (active) setProviders(result.providers); })
-      .catch((e: Error) => { if (active) setProviderError(e.message || 'Provider availability could not be checked.'); });
+      .catch(() => { if (active) setProviderError('The study service is unreachable. Check that the backend is running, then try again.'); });
     return () => { active = false; };
-  }, []);
+  }, [providerRefresh]);
   useEffect(() => {
     const element = transcript.current;
     if (element && typeof element.scrollTo === 'function') element.scrollTo({ top: element.scrollHeight, behavior: 'smooth' });
@@ -80,7 +81,7 @@ export function AIPage() {
   }
 
   return (
-    <PageContainer><ContentWrapper>
+    <PageContainer><ContentWrapper className="sv-ai-workspace">
       <header className="mb-5"><p className="text-sm font-semibold uppercase tracking-wide text-teal-700">AI Study</p><h1 className="mt-1 text-3xl font-bold text-ink">Study assistant</h1><p className="mt-2 max-w-3xl text-sm text-ink-muted">Ask for explanations or study help. Typed questions go to the configured provider. Selected PDFs are extracted on the Student-Vault server; their passages stay there by default. External document or image sharing requires the separate consent below.</p></header>
       <div className="mb-4 flex items-center gap-3 rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-900"><Sparkles className="h-4 w-4" aria-hidden="true"/><span>{providers?.length ? `Available providers: ${providers.join(', ')}` : providerError ? 'Provider availability could not be checked.' : 'Checking configured providers…'}</span></div>
       {providers?.length === 0 && <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">No AI chat provider is configured. Local document extraction and an offline study scaffold remain available.</p>}
@@ -112,9 +113,9 @@ export function AIPage() {
           {busy && <p role="status" className="text-sm text-ink-muted">Retrieving selected sources…</p>}
         </div>
         {error && <p role="alert" className="mb-3 rounded-lg bg-coral-50 p-3 text-sm text-coral-800">{error}</p>}
-        {providerError && <p className="mb-3 text-xs text-ink-muted">{providerError}</p>}
+        {providerError && <div className="mb-3 rounded-lg border border-border p-3 text-sm text-ink-muted" role="status"><p>{providerError}</p><Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => { setProviderError(''); setProviders(null); setProviderRefresh(value => value + 1); }}>Check service again</Button></div>}
         <div className="mb-3"><label className="text-sm text-ink-muted">Study topic<select value={topicId} onChange={(event) => { setTopicId(event.target.value); setSelectedResourceIds([]); }} className="mt-1 block min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-ink"><option value="">No topic selected</option>{topicResult?.topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.subject}: {topic.title}</option>)}</select></label></div>
-        <form onSubmit={send} className="flex items-end gap-2"><label htmlFor="ai-question" className="sr-only">Your study question</label><textarea id="ai-question" value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={4000} rows={2} className="min-h-12 flex-1 resize-y rounded-lg border border-gray-300 p-3 text-sm" placeholder="Ask a study question…"/><Button type="submit" loading={busy} disabled={!prompt.trim() || busy || (providers === null && !providerError)} aria-label="Send question" leftIcon={<Send className="h-4 w-4"/>}>Send</Button></form>
+        <form onSubmit={send} className="flex items-end gap-2"><label htmlFor="ai-question" className="sr-only">Your study question</label><textarea id="ai-question" value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={4000} rows={2} className="min-h-12 min-w-0 flex-1 resize-y rounded-lg border border-gray-300 p-3 text-sm" placeholder="Ask a study question…"/><Button type="submit" loading={busy} disabled={!prompt.trim() || busy || (providers === null && !providerError)} aria-label="Send question" leftIcon={<Send className="h-4 w-4"/>}>Send</Button></form>
       </Card>
     </ContentWrapper></PageContainer>
   );
