@@ -1,0 +1,19 @@
+# Deployment and recovery
+
+Use Node 22.12 or newer, Python 3.12 with `backend/requirements-documents.txt`, and PostgreSQL. Run `npm ci`, `npm run prisma:generate`, and `npm run build` in backend; run `npm ci` and `npm run build` in frontend. CI provisions a disposable PostgreSQL 17 database and runs the migration, persistence, and regression checks. The workflow requires no real provider or Clerk credentials; its database password is exclusively for the disposable CI service.
+
+Configure runtime secrets through the host's secret manager: `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `CLERK_WEBHOOK_SECRET`, and `FRONTEND_URL`. Set `NODE_ENV=production`, `PORT`, and the explicit `TEACHER_CLERK_IDS` allowlist. Optional integrations are documented in the backend README. Never bake `.env` into an image or publish it with frontend files.
+
+Before release, take a database snapshot, inspect migration history with `npx prisma migrate status`, and apply reviewed migrations with `npm run prisma:migrate:deploy`. An existing database without migration history must be verified against the initial schema before baselining. Do not run `migrate reset` or `db push` on a deployment database.
+
+Serve `frontend/dist` at `/app/` with SPA fallback to `/app/index.html`. Forward `/api/` to the backend started with `npm start`. Terminate TLS at a reverse proxy and restrict direct access to the backend. Configure Clerk's allowed origins/redirects and webhook URL for that hostname. Keep the exact frontend origin in `FRONTEND_URL`.
+
+Use `/api/health` for process liveness. Use `/api/ready` for database connectivity readiness: it returns 200 with `status: ready` when `SELECT 1` succeeds and 503 with `status: unavailable` on failure or a two-second response timeout. It exposes no database details and requires no Clerk token. Results are cached internally for two seconds, and concurrent probes share one outstanding query; the HTTP timeout does not cancel that query. Configure PostgreSQL/client connection and query timeouts as well. Readiness proves connectivity, not migration state or external provider availability; migration checks remain a release step. Monitor HTTP 5xx rate, response latency, process restarts, and database connectivity using the hosting platform; alert on sustained failures. Logs must exclude authorization headers, student documents, and provider payloads. Process shutdown closes Fastify and disconnects Prisma.
+
+Rate limits are per process. Deploy a single backend instance until a shared gateway limit is configured; horizontal scaling without a shared limit increases the effective allowance. Apply ingress upload limits consistent with the API's endpoint limits. Enable managed PostgreSQL backups and point-in-time recovery where supported.
+
+Rehearse restore in a separate isolated database: restore a provider snapshot or a `pg_dump --format=custom` backup with `pg_restore --no-owner` into a newly created empty database. Verify migration status, schema consistency, row counts, and the authorization/intervention workflows before considering the restore usable. Never restore over the live database as a test. Retain encrypted backups under access controls, with retention decided by the data owner.
+
+Rollback application releases to a previously built artifact only if compatible with the migrated schema. Prefer a reviewed forward migration for schema corrections. A destructive rollback requires a maintenance window and a verified restore plan.
+
+Release verification still requires a real Clerk test account for student/teacher sign-in and browser flows, explicitly opted-in synthetic documents for live OCR/AI checks, and deployment access for TLS, proxy, backup/restore, and monitoring checks. Local tests do not establish these external properties.

@@ -6,8 +6,8 @@ import { toJsonSchema } from "../utils/schema.js";
 const chatSchemaZod = z.object({
   messages: z.array(z.object({
     role: z.enum(["system", "user", "assistant"]),
-    content: z.string(),
-  })).min(1),
+    content: z.string().min(1).max(8_000),
+  })).min(1).max(32),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().min(1).max(4096).optional(),
   model: z.string().optional(),
@@ -55,7 +55,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       const response = await aiService.chat(body);
       return response;
     } catch (error) {
-      if (error instanceof Error && error.message.includes("not configured")) {
+      if (error instanceof Error && /no ai provider configured|not configured/i.test(error.message)) {
         return reply.status(503).send({
           error: "service_unavailable",
           message: "AI service is not configured. Please set up API keys.",
@@ -78,6 +78,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
   }, async (request, reply) => {
     try {
       const body = request.body as AIChatOptions;
+      aiService.getProvider();
       const options = { ...body, stream: true };
 
       reply.raw.writeHead(200, {
@@ -93,12 +94,13 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       reply.raw.write("data: [DONE]\n\n");
       reply.raw.end();
     } catch (error) {
-      if (error instanceof Error && error.message.includes("not configured")) {
-        reply.raw.writeHead(503);
-        reply.raw.end(JSON.stringify({
-          error: "service_unavailable",
-          message: "AI service is not configured. Please set up API keys.",
-        }));
+      if (error instanceof Error && /no ai provider configured|not configured/i.test(error.message)) {
+        if (reply.raw.headersSent) {
+          reply.raw.write(`event: error\ndata: ${JSON.stringify({ error: "service_unavailable", message: "AI request failed. Retry the request." })}\n\n`);
+          reply.raw.end("data: [DONE]\n\n");
+        } else {
+          return reply.status(503).send({ error: "service_unavailable", message: "AI service is not configured. Please set up API keys." });
+        }
         return;
       }
       throw error;

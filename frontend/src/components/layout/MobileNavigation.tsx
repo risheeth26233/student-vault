@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Calendar, Video, Search, MessageSquare, Image, Cloud,
   Menu, X, ChevronRight, Gauge, Calculator, NotebookPen, FileText, Timer, ClipboardList,
-  TrendingUp, Lightbulb
+  TrendingUp, Lightbulb, PenLine, Users
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -20,6 +20,8 @@ const navItems = [
   { id: 'attendance', label: 'Attendance', href: '/attendance', icon: Calendar },
   { id: 'performance', label: 'Performance', href: '/performance', icon: TrendingUp },
   { id: 'insights', label: 'Insights', href: '/insights', icon: Lightbulb },
+  { id: 'handwriting', label: 'Practice', href: '/handwriting', icon: PenLine },
+  { id: 'teacher', label: 'Classes', href: '/teacher', icon: Users },
   { id: 'calculator', label: 'Calculator', href: '/calculator', icon: Calculator },
   { id: 'study', label: 'Study Mode', href: '/study', icon: Timer },
   { id: 'youtube', label: 'YouTube', href: '/youtube', icon: Video },

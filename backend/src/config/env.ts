@@ -12,6 +12,14 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional().or(emptyStringToUndefined),
   ANTHROPIC_API_KEY: z.string().optional().or(emptyStringToUndefined),
 
+  // Handwritten-work OCR (Phase 3). `openai` uses OPENAI_API_KEY; `none`
+  // forces the unavailable provider even when a key exists (opt-out).
+  OCR_PROVIDER: z.enum(["openai", "none"]).optional().or(emptyStringToUndefined),
+  OCR_MODEL: z.string().optional().or(emptyStringToUndefined),
+
+  // Local PDF text extraction uses pypdf through a bounded Python subprocess.
+  PDF_PYTHON_BIN: z.string().optional().or(emptyStringToUndefined),
+
   // YouTube
   YOUTUBE_API_KEY: z.string().optional().or(emptyStringToUndefined),
 
@@ -35,6 +43,8 @@ const envSchema = z.object({
   CLERK_PUBLISHABLE_KEY: z.string().optional().or(emptyStringToUndefined),
   CLERK_SECRET_KEY: z.string().optional().or(emptyStringToUndefined),
   CLERK_WEBHOOK_SECRET: z.string().optional().or(emptyStringToUndefined),
+  // Clerk IDs explicitly allowlisted as teachers. End users cannot self-assign this role.
+  TEACHER_CLERK_IDS: z.string().optional().or(emptyStringToUndefined),
 
   // Email
   EMAIL_API_KEY: z.string().optional().or(emptyStringToUndefined),

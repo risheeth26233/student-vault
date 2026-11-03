@@ -92,6 +92,7 @@ export const SIGNAL_KIND_LABEL: Record<LearningSignalKind, string> = {
   attendance_session: 'Attendance session',
   study_activity: 'Study activity',
   resource_activity: 'Resource activity',
+  practice_outcome: 'Handwritten practice check',
 };
 
 const DISTINGUISHER_LABEL: Record<keyof GapDistinguishers, string> = {

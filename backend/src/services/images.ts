@@ -23,7 +23,7 @@ export interface GeneratedImage {
   width: number;
   height: number;
   prompt: string;
-  seed: number;
+  seed?: number;
 }
 
 export interface ImageGenerationResponse {
@@ -50,7 +50,13 @@ export class ImageService {
   }
 
   async generate(options: ImageGenerationOptions): Promise<ImageGenerationResponse> {
-    return this.getProvider().generate(options);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        this.getProvider().generate(options),
+        new Promise<never>((_resolve, reject) => { timer = setTimeout(() => reject(new Error("Image generation timed out")), 60_000); }),
+      ]);
+    } finally { if (timer) clearTimeout(timer); }
   }
 
   isConfigured(): boolean {
@@ -65,10 +71,7 @@ export const imageService = new ImageService();
  */
 export class PlaceholderImageProvider implements ImageProvider {
   async generate(_options: ImageGenerationOptions): Promise<ImageGenerationResponse> {
-    return {
-      images: [],
-      creditsUsed: 0,
-    };
+    throw new Error("Image provider not configured");
   }
 }
 
@@ -139,7 +142,7 @@ export class FalAiProvider implements ImageProvider {
 
       const result = await this.client.subscribe(modelToUse, {
         input,
-        logs: true,
+        logs: false,
         onQueueUpdate: (update) => {
           if (update.status === "IN_PROGRESS") {
             // Could emit progress here if needed
@@ -159,7 +162,7 @@ export class FalAiProvider implements ImageProvider {
         width: img.width || width,
         height: img.height || height,
         prompt,
-        seed: img.seed || Math.floor(Math.random() * 1000000),
+        seed: img.seed,
       }));
 
       return {
@@ -193,7 +196,7 @@ export class OpenAIImageProvider implements ImageProvider {
   private client: OpenAI;
 
   constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey });
+    this.client = new OpenAI({ apiKey, timeout: 60_000, maxRetries: 0 });
   }
 
   private mapFormat(format?: "png" | "jpeg" | "webp"): "png" | "jpeg" | "webp" {
@@ -243,7 +246,6 @@ export class OpenAIImageProvider implements ImageProvider {
       height = 512,
       // steps, // Not supported by DALL-E
       // guidanceScale, // Not supported by DALL-E
-      seed, // Not supported by DALL-E, but used for response metadata
       model = "dall-e-2",
       // format = "png", // Response format handled by API
     } = options;
@@ -263,10 +265,9 @@ export class OpenAIImageProvider implements ImageProvider {
 
       const images: GeneratedImage[] = (response.data || []).map((img, _index) => ({
         url: img.url || "",
-        width: width,
-        height: height,
+        width: Number(size.split('x')[0]),
+        height: Number(size.split('x')[1]),
         prompt,
-        seed: seed || Math.floor(Math.random() * 1000000),
       }));
 
       return {
@@ -314,5 +315,5 @@ export async function initializeImageProvider(): Promise<void> {
   }
 
   // Fallback to placeholder if no API key
-  imageService.setProvider(new PlaceholderImageProvider());
+  // Leave the service unavailable when no real provider is configured.
 }

@@ -457,6 +457,13 @@ export const aiApi = {
       body: JSON.stringify(params),
     });
   },
+
+  async study(params: { question: string; resourceIds: string[]; shareWithProvider: boolean }) {
+    return apiRequest<import('../types/api').AIStudyResponse>('/ai/study', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
   
   async chatStream(params: import('../types/api').AIChatOptions) {
     const token = await getSessionToken();
@@ -496,6 +503,118 @@ export const imagesApi = {
   
   async status() {
     return apiRequest<{ configured: boolean }>('/images/status');
+  },
+};
+
+/**
+ * ==================== HANDWRITING / OCR API (Phase 3) ====================
+ */
+
+export const handwritingApi = {
+  /** Whether an OCR provider is configured on the server (never faked). */
+  async status() {
+    return apiRequest<import('../types/api').OcrStatusResponse>('/handwriting/status');
+  },
+
+  /**
+   * Request automatic extraction for a set of pages. Consent is explicit:
+   * this client refuses to send student pages without it (the backend
+   * re-checks the flag server-side as well).
+   */
+  async extract(params: { pages: import('../types/api').OcrPageInput[]; consent: boolean }) {
+    if (params.consent !== true) {
+      const error = new Error(
+        'Automatic extraction requires explicit consent to send these pages to the configured OCR provider.'
+      ) as Error & { status?: number; code?: string };
+      error.status = 400;
+      error.code = 'consent_required';
+      throw error;
+    }
+    return apiRequest<import('../types/api').OcrExtractResponse>('/handwriting/extract', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+};
+
+export interface TeacherClass {
+  id: string;
+  name: string;
+  subject: string | null;
+  joinCode: string;
+  activeStudents: number;
+  createdAt: string;
+}
+
+export interface TeacherStudent {
+  id: string;
+  name: string;
+  enrolledAt: string;
+  topics: Array<{ id: string; subject: string; title: string; status: 'learning' | 'reviewing' | 'ready'; updatedAt: string }>;
+  assessments: Array<{ id: string; title: string; subject: string; topicId: string | null; score: number; maxScore: number; date: string }>;
+  evidenceNotice: string;
+}
+
+export interface InterventionRecord {
+  id: string;
+  classroomId: string;
+  studentId: string;
+  topicId: string | null;
+  need: string;
+  action: string;
+  status: 'proposed' | 'approved' | 'in_progress' | 'completed' | 'cancelled';
+  evidenceSummary: string | null;
+  outcomeNote: string | null;
+  teacherFeedback: string | null;
+  followUpRequired: boolean;
+  reviewedAt: string | null;
+  baselineScore: number | null;
+  baselineMaxScore: number | null;
+  followUpScore: number | null;
+  followUpMaxScore: number | null;
+  dueAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  student?: { id: string; name: string };
+  topic?: { id: string; subject: string; title: string } | null;
+  classroom?: { name: string };
+  author?: { name: string };
+  events?: Array<{ id: string; fromStatus: string | null; toStatus: string; note: string | null; createdAt: string }>;
+}
+
+export const teacherApi = {
+  async classes() {
+    return apiRequest<{ classes: TeacherClass[] }>('/teacher/classes');
+  },
+  async createClass(input: { name: string; subject?: string }) {
+    return apiRequest<Omit<TeacherClass, 'activeStudents'>>('/teacher/classes', { method: 'POST', body: JSON.stringify(input) });
+  },
+  async students(classId: string) {
+    return apiRequest<{ students: TeacherStudent[]; topicSummary: Array<{ subject: string; title: string; studentsWithTopic: number; learning: number; reviewing: number; ready: number; assessmentCount: number; assessmentAveragePercent: number | null; latestAssessmentAt: string | null; latestEvidenceAt: string | null; evidenceFreshness: 'none' | 'recent' | 'stale'; observedSignal: 'review_indicated' | 'insufficient_evidence' | 'no_flagged_signal' }>; summaryNotice: string }>(`/teacher/classes/${encodeURIComponent(classId)}/students`);
+  },
+  async acceptEnrollment(joinCode: string) {
+    return apiRequest<{ success: true; className: string; subject: string | null }>('/teacher/enrollments/accept', { method: 'POST', body: JSON.stringify({ joinCode }) });
+  },
+  async classInterventions(classId: string) {
+    return apiRequest<{ interventions: InterventionRecord[] }>(`/teacher/classes/${encodeURIComponent(classId)}/interventions`);
+  },
+  async proposeIntervention(classId: string, input: { studentId: string; topicId: string; need: string; action: string; evidenceSummary?: string }) {
+    return apiRequest<InterventionRecord>(`/teacher/classes/${encodeURIComponent(classId)}/interventions`, { method: 'POST', body: JSON.stringify(input) });
+  },
+  async reviewIntervention(id: string, status: 'approved' | 'cancelled') {
+    return apiRequest<InterventionRecord>(`/teacher/interventions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+  },
+  async addInterventionFeedback(id: string, feedback: string) {
+    return apiRequest<InterventionRecord>(`/teacher/interventions/${encodeURIComponent(id)}/feedback`, { method: 'POST', body: JSON.stringify({ feedback }) });
+  },
+  async reviewInterventionOutcome(id: string, feedback: string, followUpRequired: boolean) {
+    return apiRequest<InterventionRecord>(`/teacher/interventions/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify({ feedback, followUpRequired }) });
+  },
+  async myInterventions() {
+    return apiRequest<{ interventions: InterventionRecord[] }>('/student/interventions');
+  },
+  async updateMyIntervention(id: string, status: 'in_progress' | 'completed', outcomeNote?: string, followUpScore?: number, followUpMaxScore?: number) {
+    return apiRequest<InterventionRecord>(`/student/interventions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ status, outcomeNote, followUpScore, followUpMaxScore }) });
   },
 };
 
@@ -628,6 +747,7 @@ export default {
   search: searchApi,
   ai: aiApi,
   images: imagesApi,
+  handwriting: handwritingApi,
   checkHealth,
   initClerk,
   signIn,

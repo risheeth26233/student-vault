@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { prisma } from "../utils/prisma.js";
+import { prisma as defaultPrisma } from "../utils/prisma.js";
 import { getDbUserId, type AuthenticatedRequest } from "../plugins/clerk-auth.js";
 import { isR2Configured, generateUploadUrl, generateDownloadUrl, buildR2Key, deleteObject, getR2PublicUrl } from "../services/r2.js";
 import { toJsonSchema } from "../utils/schema.js";
+import { validateResourceUpload } from "../services/resourceValidation.js";
 
 // Sync status response
 const syncStatusResponseZod = z.object({
@@ -52,6 +53,7 @@ const pullResourceZod = z.object({
   size: z.string(),
   r2Key: z.string().nullable(),
   downloadUrl: z.string().nullable(),
+  data: z.string().nullable(),
   createdAt: z.string().datetime(),
 });
 
@@ -162,7 +164,8 @@ const r2DownloadUrlResponseSchema = toJsonSchema(r2DownloadUrlResponseZod);
 const errorResponseZod = z.object({ error: z.string(), message: z.string() });
 const errorResponseSchema = toJsonSchema(errorResponseZod);
 
-export async function syncRoutes(app: FastifyInstance): Promise<void> {
+export function createSyncRoutes(prisma = defaultPrisma) {
+return async function syncRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/sync/status - Get sync status
   app.get("/api/sync/status", {
     schema: {
@@ -224,6 +227,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
         size: r.size.toString(),
         r2Key: r.r2Key,
         downloadUrl,
+        data: r.data,
         createdAt: r.createdAt.toISOString(),
       };
     }));
@@ -294,6 +298,12 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
     const serverTopicMap = new Map(serverTopics.map(t => [t.id, t]));
     const serverAttendanceMap = new Map(serverAttendance.map(a => [a.id, a]));
     const serverResourceMap = new Map(serverResources.map(r => [r.id, r]));
+
+    for (const resource of pushData.resources) {
+      if (resource._deleted || serverResourceMap.has(resource.id)) continue;
+      const validation = validateResourceUpload({ userId, mimeType: resource.mimeType, size: Number(resource.size), data: resource.data, r2Key: resource.r2Key });
+      if (!validation.ok) return reply.status(400).send({ error: validation.code, message: validation.message });
+    }
 
     const conflicts: Array<{ type: string; id: string; serverData: unknown; clientData: unknown }> = [];
     const stats = {
@@ -433,6 +443,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
                 // Create new record
                 await tx.attendanceRecord.create({
                   data: {
+                    id: clientRecord.id,
                     attendanceSubjectId: clientSubject.id,
                     record: clientRecord.record,
                     createdAt: clientRecord.createdAt ? new Date(clientRecord.createdAt) : new Date(),
@@ -453,6 +464,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
                 updatedAt: new Date(),
                 records: {
                   create: (clientSubject.records ?? []).map(r => ({
+                    id: r.id,
                     record: r.record,
                     createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
                   })),
@@ -499,10 +511,10 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
           // Verify topic exists
           const topic = await tx.topic.findFirst({ where: { id: clientResource.topicId, userId } });
-          if (!topic) continue;
+          if (!topic) throw new Error("Resource topic is not owned by this user");
 
           const sizeBytes = Number(clientResource.size);
-          if (sizeBytes > 20 * 1024 * 1024) continue;
+          if (!Number.isSafeInteger(sizeBytes) || sizeBytes <= 0 || sizeBytes > 20 * 1024 * 1024) throw new Error("Invalid resource size");
 
           const r2Key = clientResource.r2Key || (isR2Configured() ? buildR2Key(userId, clientResource.id, clientResource.name) : null);
 
@@ -563,8 +575,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
         serverVersion: newServerVersion,
         stats,
       };
-    } catch (error) {
-      console.error("Push sync failed:", error);
+    } catch {
       return reply.status(500).send({
         error: "sync_failed",
         message: "Failed to push changes. Database error occurred.",
@@ -650,4 +661,6 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
     return { downloadUrl };
   });
+};
 }
+export const syncRoutes = createSyncRoutes();

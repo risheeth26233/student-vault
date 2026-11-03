@@ -31,22 +31,26 @@ export interface AuthenticatedRequest extends FastifyRequest {
     id: string;
     email: string;
     name: string;
+    role: "student" | "teacher";
   };
 }
 
 async function getOrCreateDbUser(clerkUser: ClerkUser) {
+  const teacherIds = new Set((env.TEACHER_CLERK_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean));
+  const role = teacherIds.has(clerkUser.id) ? "teacher" : "student";
   const existingUser = await prisma.user.findUnique({
     where: { clerkId: clerkUser.id },
   });
 
   if (existingUser) {
     // Update email and name if changed
-    if (existingUser.email !== clerkUser.email || existingUser.name !== (clerkUser.firstName || clerkUser.username || "User")) {
+    if (existingUser.email !== clerkUser.email || existingUser.name !== (clerkUser.firstName || clerkUser.username || "User") || existingUser.role !== role) {
       return prisma.user.update({
         where: { clerkId: clerkUser.id },
         data: {
           email: clerkUser.email,
           name: clerkUser.firstName || clerkUser.username || "User",
+          role,
         },
       });
     }
@@ -59,6 +63,7 @@ async function getOrCreateDbUser(clerkUser: ClerkUser) {
       clerkId: clerkUser.id,
       email: clerkUser.email,
       name: clerkUser.firstName || clerkUser.username || "User",
+      role,
     },
   });
 }
@@ -67,8 +72,8 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
   // Add Clerk user to request after verification
   app.addHook("preHandler", async (request: AuthenticatedRequest, reply: FastifyReply) => {
     // Skip authentication for public routes
-    const publicRoutes = ["/api/health"];
-    if (publicRoutes.includes(request.routerPath || request.url)) {
+    const publicRoutes = ["/api/health", "/api/ready", "/api/webhooks/clerk"];
+    if (publicRoutes.includes(request.routeOptions.url || request.url.split("?")[0] || request.url)) {
       return;
     }
 
@@ -93,10 +98,14 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
 
     try {
       // Verify the session token
-      const session = await clerk.sessions.verifySession(sessionToken, sessionToken);
+      const session = await clerk.verifyToken(sessionToken, {
+        authorizedParties: [env.FRONTEND_URL],
+        // Match the installed SDK's default issuer policy while supplying azp.
+        issuer: (iss) => iss.startsWith("https://clerk.") || iss.includes(".clerk.accounts"),
+      });
       
       // Get user details
-      const user = await clerk.users.getUser(session.userId);
+      const user = await clerk.users.getUser(session.sub);
       
       const clerkUser: ClerkUser = {
         id: user.id,
@@ -117,9 +126,10 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
         id: dbUser.id,
         email: dbUser.email,
         name: dbUser.name,
+        role: dbUser.role,
       };
-    } catch (error) {
-      app.log.error({ err: error }, "Clerk authentication failed");
+    } catch {
+      app.log.warn("Authentication or account lookup failed");
       return reply.status(401).send({
         error: "unauthorized",
         message: "Invalid or expired session",

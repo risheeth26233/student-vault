@@ -2,9 +2,15 @@
 
 A browser-based study organizer for exam preparation.
 
-## Use it
+## Current implementation status
 
-1. Open `index.html` in a browser.
+The project has exactly seven phases. Phases 1 and 2 are committed. Phase 3's local-first handwriting and adaptive-practice workflow is implemented. Phase 4 adds role-scoped teacher classes, explicit enrollment, authorized rosters, and observed topic/assessment summaries. Phase 5 adds intervention proposals, lifecycle history, reassessment records, and teacher feedback. Phase 6 includes provider chat, a local study scaffold, and selected-resource study assistance with local PDF extraction and page-level retrieval; external sharing requires explicit consent. Phase 7 hardening and verification remain in progress. Teacher database migrations have not been applied because the configured database is remote and not identified as a safe test target. See [the progress record](docs/PROJECT_PROGRESS.md) for exact verification results and limits.
+
+The React application under `frontend/` is the primary app at `/app`; the legacy root application remains preserved. Teacher and student APIs enforce role and object ownership on the backend. See [frontend setup](frontend/README.md) and [backend setup](backend/README.md).
+
+## Legacy browser app
+
+1. Open `index.html` in a browser to use the preserved legacy app. For the primary React app, follow [frontend setup](frontend/README.md).
 2. Add a subject, topic, and optional exam date.
 3. Write revision notes and tick the checklist as you prepare.
 4. Use **Attach PDF or photo** to keep study resources with the right topic.
@@ -14,7 +20,7 @@ Topics and notes are stored in this browser. PDF and photo attachments are store
 
 ---
 
-## Backend API (Phase 1 + 2 + 3 + 4 + 5 + 6 + 7)
+## Backend API
 
 The backend provides a REST API for persisting Student Vault data to PostgreSQL with Clerk authentication, Cloudflare R2 file storage, AI providers, YouTube Data API v3, Brave Search API, and Image Generation (Fal.ai/DALL-E).
 
@@ -23,12 +29,14 @@ The backend provides a REST API for persisting Student Vault data to PostgreSQL 
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env with your DATABASE_URL, Clerk keys, and R2 credentials
+# Configure DATABASE_URL for an empty, verified local development database and add Clerk keys.
 npm install
 npm run prisma:generate
-npm run prisma:migrate
+npm run prisma:migrate:deploy
 npm run dev
 ```
+
+Do not point migration commands at an unknown or populated remote database. For isolated PostgreSQL integration tests, see the setup and explicit test-database guard in [the progress record](docs/PROJECT_PROGRESS.md).
 
 Server runs at `http://localhost:3000`
 
@@ -42,7 +50,7 @@ See `backend/.env.example` for all options. Required:
 - `CLERK_PUBLISHABLE_KEY` - Clerk publishable key for frontend
 - `CLERK_WEBHOOK_SECRET` - Clerk webhook secret for user sync
 
-For Phase 3 (Cloud Sync + R2):
+For Cloud Sync and R2 storage:
 
 - `R2_ACCOUNT_ID` - Cloudflare R2 account ID
 - `R2_ACCESS_KEY_ID` - R2 access key ID
@@ -50,20 +58,20 @@ For Phase 3 (Cloud Sync + R2):
 - `R2_BUCKET_NAME` - R2 bucket name
 - `R2_PUBLIC_URL` - R2 public URL (optional, for direct access)
 
-For Phase 4 (AI Services):
+For AI services:
 
 - `OPENAI_API_KEY` - OpenAI API key (for GPT models and embeddings)
 - `ANTHROPIC_API_KEY` - Anthropic API key (for Claude models)
 
-For Phase 5 (YouTube Data API v3):
+For YouTube search:
 
 - `YOUTUBE_API_KEY` - YouTube Data API v3 key (from Google Cloud Console)
 
-For Phase 6 (Brave Search API):
+For web search:
 
 - `BRAVE_SEARCH_API_KEY` - Brave Search API key (from https://brave.com/search/api/)
 
-For Phase 7 (Image Generation):
+For image generation:
 
 - `FAL_API_KEY` - Fal.ai API key (recommended, from https://fal.ai) - supports Flux, SDXL, and other models
 - `OPENAI_API_KEY` - OpenAI API key (fallback for DALL-E 2/3)
@@ -93,21 +101,33 @@ The session token is obtained from Clerk on the frontend after user sign-in.
 - `GET /api/sync/r2/upload-url` - Get presigned URL for uploading a file to R2
 - `GET /api/sync/r2/download-url` - Get presigned URL for downloading a file from R2
 
-#### AI (Authenticated) (Phase 4)
+#### AI (Authenticated)
 - `POST /api/ai/chat` - Chat with AI assistant
 - `POST /api/ai/chat/stream` - Stream chat with AI assistant
 - `GET /api/ai/providers` - List available AI providers
+- `POST /api/ai/study` - Retrieve selected owned resources and optionally send relevant excerpts to a provider after explicit consent
 
-#### YouTube (Authenticated) (Phase 5)
+#### Handwriting and practice (Authenticated)
+- `GET /api/handwriting/status` - Check configured extraction provider
+- `POST /api/handwriting/extract` - Consent-gated OCR extraction for validated images
+
+#### Teacher and intervention workflows (Authenticated)
+- `GET|POST /api/teacher/classes` - List or create teacher-owned classrooms
+- `GET /api/teacher/classes/:id/students` - View active enrolled students and recorded evidence in a teacher-owned classroom
+- `POST /api/teacher/enrollments/accept` - Student joins by a teacher-shared code
+- `/api/teacher/classes/:id/interventions` and `/api/teacher/interventions/:id` - Propose, list, approve, or cancel intervention plans
+- `/api/student/interventions` - Student reads and updates their own intervention lifecycle
+
+#### YouTube (Authenticated)
 - `POST /api/youtube/search` - Search YouTube videos
 - `GET /api/youtube/videos/:id` - Get video details by ID
 - `GET /api/youtube/status` - Check YouTube service configuration
 
-#### Search (Authenticated) (Phase 6)
+#### Search (Authenticated)
 - `POST /api/search` - Search the web for educational resources
 - `GET /api/search/status` - Check search service configuration
 
-#### Images (Authenticated) (Phase 7)
+#### Images (Authenticated)
 - `POST /api/images/generate` - Generate an educational image/diagram
 - `GET /api/images/status` - Check image generation service configuration
 
@@ -161,7 +181,7 @@ The session token is obtained from Clerk on the frontend after user sign-in.
 }
 ```
 
-### Sync Protocol (Phase 3)
+### Sync Protocol (Phase 1)
 
 The sync protocol uses a version-based conflict resolution strategy:
 
@@ -195,7 +215,7 @@ The sync protocol uses a version-based conflict resolution strategy:
 }
 ```
 
-### R2 File Storage (Phase 3)
+### R2 File Storage (Phase 1)
 
 When R2 is configured, resources are stored in Cloudflare R2 instead of base64 in the database:
 

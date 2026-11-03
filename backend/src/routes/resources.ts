@@ -2,8 +2,9 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../utils/prisma.js";
 import { getDbUserId, type AuthenticatedRequest } from "../plugins/clerk-auth.js";
-import { isR2Configured, generateDownloadUrl, buildR2Key, deleteObject } from "../services/r2.js";
+import { isR2Configured, generateDownloadUrl, deleteObject, getObjectMetadata } from "../services/r2.js";
 import { toJsonSchema } from "../utils/schema.js";
+import { MAX_RESOURCE_BYTES, MAX_RESOURCE_DATA_URL_CHARS, validateResourceUpload } from "../services/resourceValidation.js";
 
 const resourceResponseZod = z.object({
   id: z.string(),
@@ -28,14 +29,15 @@ const errorResponseZod = z.object({ error: z.string(), message: z.string() });
 const resourceResponseSchema = toJsonSchema(resourceResponseZod);
 const resourcesListResponseSchema = toJsonSchema(resourcesListResponseZod);
 const errorResponseSchema = toJsonSchema(errorResponseZod);
+const hasPathOrControlCharacter = (value: string) => /[\\/]/.test(value) || [...value].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127);
 
 // For file upload - supports both base64 and R2 key
 const resourceCreateZod = z.object({
-  topicId: z.string(),
-  name: z.string(),
-  mimeType: z.string(),
-  size: z.number().or(z.string()),
-  data: z.string().optional().nullable(), // Base64 data URL (optional when using R2)
+  topicId: z.string().min(1).max(64),
+  name: z.string().trim().min(1).max(180).refine((name) => !hasPathOrControlCharacter(name), "File name must not contain path separators or control characters"),
+  mimeType: z.string().min(1).max(100),
+  size: z.number().int().positive().max(MAX_RESOURCE_BYTES).or(z.string().regex(/^\d{1,8}$/).transform(Number)),
+  data: z.string().max(MAX_RESOURCE_DATA_URL_CHARS).optional().nullable(), // Base64 data URL (optional when using R2)
   r2Key: z.string().optional().nullable(), // R2 object key (when using R2)
 });
 
@@ -143,6 +145,7 @@ export async function resourcesRoutes(app: FastifyInstance): Promise<void> {
 
   // POST /api/resources - Create a new resource (base64 data URL)
   app.post("/api/resources", {
+    bodyLimit: 28 * 1024 * 1024,
     schema: {
       tags: ["Resources"],
       summary: "Create a new resource with base64 data",
@@ -159,25 +162,21 @@ export async function resourcesRoutes(app: FastifyInstance): Promise<void> {
 
     const data = request.body as z.infer<typeof resourceCreateZod>;
 
+    const sizeBytes = Number(data.size);
+    const validation = validateResourceUpload({ userId, mimeType: data.mimeType, size: sizeBytes, data: data.data, r2Key: data.r2Key });
+    if (!validation.ok) return reply.status(400).send({ error: validation.code, message: validation.message });
+    if (data.r2Key && !isR2Configured()) return reply.status(503).send({ error: "storage_unavailable", message: "Cloud storage is not configured" });
+    if (data.r2Key) {
+      const metadata = await getObjectMetadata(data.r2Key);
+      if (!metadata || metadata.size !== sizeBytes || metadata.contentType !== data.mimeType) return reply.status(400).send({ error: "invalid_cloud_object", message: "Uploaded object is missing or its size or media type does not match" });
+    }
+
     // Verify topic exists and belongs to user
     const topic = await prisma.topic.findFirst({ where: { id: data.topicId, userId } });
-    if (!topic) {
-      return reply.status(400).send({ error: "invalid_topic", message: "Topic not found or access denied" });
-    }
-
-    // Validate file size (20MB max)
-    const sizeBytes = Number(data.size);
-    if (sizeBytes > 20 * 1024 * 1024) {
-      return reply.status(400).send({ error: "file_too_large", message: "File size exceeds 20MB limit" });
-    }
-
-    // Validate MIME type
-    if (!data.mimeType.startsWith("image/") && data.mimeType !== "application/pdf") {
-      return reply.status(400).send({ error: "invalid_type", message: "Only PDF and image files are allowed" });
-    }
+    if (!topic) return reply.status(400).send({ error: "invalid_topic", message: "Topic not found or access denied" });
 
     // Determine R2 key - use provided or generate one
-    const r2Key = data.r2Key || (isR2Configured() ? buildR2Key(userId, crypto.randomUUID(), data.name) : null);
+    const r2Key = data.r2Key ?? null;
 
     const resource = await prisma.resource.create({
       data: {

@@ -92,6 +92,31 @@ export async function objectExists(key: string): Promise<boolean> {
   }
 }
 
+export async function getObjectMetadata(key: string): Promise<{ size: number | null; contentType: string | null } | null> {
+  const client = getR2Client();
+  if (!client) return null;
+  try {
+    const result = await client.send(new HeadObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }));
+    return { size: result.ContentLength ?? null, contentType: result.ContentType ?? null };
+  } catch {
+    return null;
+  }
+}
+
+/** Reads an already-owned object only after its stored size has been checked by the caller. */
+export async function getObjectBytes(key: string, maxBytes: number): Promise<Uint8Array | null> {
+  const client = getR2Client();
+  if (!client) return null;
+  try {
+    const response = await client.send(new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }));
+    if (!response.Body || (response.ContentLength !== undefined && response.ContentLength > maxBytes)) return null;
+    const bytes = await response.Body.transformToByteArray();
+    return bytes.byteLength <= maxBytes ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+
 export function buildR2Key(userId: string, resourceId: string, fileName: string): string {
   const ext = fileName.split(".").pop() || "";
   return `users/${userId}/resources/${resourceId}.${ext}`;

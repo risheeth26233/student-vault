@@ -16,6 +16,25 @@ enum TopicStatus {
   ready
 }
 
+enum UserRole {
+  student
+  teacher
+}
+
+enum EnrollmentStatus {
+  pending
+  active
+  declined
+}
+
+enum InterventionStatus {
+  proposed
+  approved
+  in_progress
+  completed
+  cancelled
+}
+
 enum AttendanceRecordStatus {
   present
   absent
@@ -51,6 +70,7 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   lastSyncedAt  DateTime? // Last successful sync timestamp
+  role          UserRole  @default(student)
 
   profile       Profile?
   topics        Topic[]
@@ -58,8 +78,93 @@ model User {
   resources     Resource[]
   assignments   Assignment[]
   assessments   Assessment[]
+  taughtClasses Classroom[]
+  enrollments   ClassroomEnrollment[] @relation("StudentEnrollments")
+  createdInterventions Intervention[] @relation("InterventionAuthor")
+  receivedInterventions Intervention[] @relation("InterventionStudent")
+  interventionEvents InterventionEvent[] @relation("InterventionEventActor")
 
   @@map("users")
+}
+
+model Classroom {
+  id          String   @id @default(cuid())
+  teacherId   String
+  teacher     User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  name        String   @db.VarChar(80)
+  subject     String?  @db.VarChar(40)
+  joinCode    String   @unique @db.VarChar(24)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  enrollments ClassroomEnrollment[]
+  interventions Intervention[]
+
+  @@index([teacherId])
+  @@map("classrooms")
+}
+
+model ClassroomEnrollment {
+  id          String          @id @default(cuid())
+  classroomId String
+  classroom   Classroom       @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User            @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  status      EnrollmentStatus @default(pending)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([classroomId, studentId])
+  @@index([studentId, status])
+  @@map("classroom_enrollments")
+}
+
+model Intervention {
+  id          String   @id @default(cuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User     @relation("InterventionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation("InterventionAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  topicId     String?
+  topic       Topic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  need        String   @db.VarChar(1000)
+  action      String   @db.VarChar(1000)
+  status      InterventionStatus @default(proposed)
+  evidenceSummary String? @db.VarChar(2000)
+  outcomeNote String?  @db.VarChar(2000)
+  teacherFeedback String? @db.VarChar(2000)
+  followUpRequired Boolean @default(false)
+  reviewedAt DateTime?
+  baselineScore Int?
+  baselineMaxScore Int?
+  followUpScore Int?
+  followUpMaxScore Int?
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  events      InterventionEvent[]
+
+  @@index([classroomId, studentId, status])
+  @@index([authorId])
+  @@map("interventions")
+}
+
+model InterventionEvent {
+  id             String   @id @default(cuid())
+  interventionId String
+  intervention   Intervention @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+  actorId        String
+  actor          User     @relation("InterventionEventActor", fields: [actorId], references: [id], onDelete: Cascade)
+  fromStatus     InterventionStatus?
+  toStatus       InterventionStatus
+  note           String?  @db.VarChar(2000)
+  createdAt      DateTime @default(now())
+
+  @@index([interventionId, createdAt])
+  @@index([actorId])
+  @@map("intervention_events")
 }
 
 model Profile {
@@ -89,6 +194,7 @@ model Topic {
   resources   Resource[]
   assignments Assignment[]
   assessments Assessment[]
+  interventions Intervention[]
 
   @@index([userId])
   @@index([subject])
