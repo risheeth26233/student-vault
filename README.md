@@ -4,7 +4,9 @@ An academic workspace combining student organization, explainable learning intel
 
 [![Verify application](https://github.com/risheeth26233/student-vault/actions/workflows/verify.yml/badge.svg)](https://github.com/risheeth26233/student-vault/actions/workflows/verify.yml)
 
-**Public release status:** deployment preparation is in progress. No public HTTPS demo has been verified yet. A localhost preview is not a public deployment; a live link will be added after verification.
+### [Open the public preview](https://student-vault-467y.onrender.com/app/)
+
+**Release status: deployed, partially verified.** The real React app and API are hosted together on Render's free plan. HTTPS page/assets, deep links, health and anonymous access denials passed. Local guest tools are available; Clerk configuration, demo-database migration and signed-in student/teacher verification are pending. Database readiness currently fails until secure configuration is completed. This is not a production-ready release.
 
 ![Actual student workspace in an isolated local guest session](docs/screenshots/workspace-desktop.png)
 
@@ -57,7 +59,7 @@ See [deployment and recovery](docs/DEPLOYMENT.md) for account connection, databa
 
 ## Current implementation status
 
-The roadmap has exactly seven phases. Phases 1–6 are implemented with automated coverage; teacher/intervention persistence and both migrations passed against isolated PostgreSQL locally and in CI. Phase 7 release hardening is in progress. The public environment, live Clerk sign-in and external AI/OCR remain unverified. No remote Neon migration is claimed. See [the progress record](docs/PROJECT_PROGRESS.md) for evidence, historical checkpoints and limitations.
+The roadmap has exactly seven phases. Phases 1–6 are implemented with automated coverage; teacher/intervention persistence and both migrations passed against isolated PostgreSQL locally and in prior CI. Phase 7 release hardening is in progress. The public environment passed read-only HTTP checks, but live Clerk sign-in, public persistence, browser workflows and external AI/OCR remain unverified. No remote Neon migration is claimed. See [the progress record](docs/PROJECT_PROGRESS.md) for evidence, historical checkpoints and limitations.
 
 The React application under `frontend/` is the primary app at `/app`; the legacy root application remains preserved. Teacher and student APIs enforce role and object ownership on the backend. See [frontend setup](frontend/README.md) and [backend setup](backend/README.md).
 
