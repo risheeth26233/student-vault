@@ -49,6 +49,8 @@ return async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
         200: webhookResponseSchema,
         400: errorResponseSchema,
         401: errorResponseSchema,
+        500: errorResponseSchema,
+        503: errorResponseSchema,
       },
     },
   }, async (request, reply) => {

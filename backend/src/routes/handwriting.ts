@@ -90,6 +90,7 @@ export async function handwritingRoutes(app: FastifyInstance): Promise<void> {
       response: {
         200: extractResponseSchema,
         400: errorResponseSchema,
+        500: errorResponseSchema,
         503: errorResponseSchema,
       },
     },
@@ -117,8 +118,8 @@ export async function handwritingRoutes(app: FastifyInstance): Promise<void> {
       }));
       const result = await ocrService.extract(pages);
       return result;
-    } catch (error) {
-      request.log.error({ err: error }, "OCR extraction failed");
+    } catch {
+      request.log.error("OCR extraction failed");
       return reply.status(500).send({
         error: "ocr_failed",
         message: "Text extraction failed before completing every page. Retry, or transcribe the pages manually.",

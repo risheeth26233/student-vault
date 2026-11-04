@@ -1,10 +1,63 @@
-# Student Vault
+# Student-Vault × GuruGraph
 
-A browser-based study organizer for exam preparation.
+An academic workspace combining student organization, explainable learning intelligence, adaptive practice, and teacher-supported interventions.
+
+[![Verify application](https://github.com/risheeth26233/student-vault/actions/workflows/verify.yml/badge.svg)](https://github.com/risheeth26233/student-vault/actions/workflows/verify.yml)
+
+**Public release status:** deployment preparation is in progress. No public HTTPS demo has been verified yet. A localhost preview is not a public deployment; a live link will be added after verification.
+
+![Actual student workspace in an isolated local guest session](docs/screenshots/workspace-desktop.png)
+
+The screenshot shows the actual application with an empty, synthetic guest profile, captured during the 2026-11-03 UI review. It is not evidence of cloud authentication or a deployed service.
+
+## Explore the application
+
+- **Local student workspace:** open `/app/`, continue as guest or create a local profile. Add subjects/topics in My Vault, notes/resources, attendance, assignments and assessment results. These records stay in this browser until an explicitly supported cloud sync is requested.
+- **Learning Insights:** open Insights after recording evidence. Expand explanations to distinguish observations from estimates. Missing evidence is shown honestly.
+- **Practice:** open Practice, select a topic, upload supported page images, and review transcription. Manual transcription works without OCR. Generated practice and progress summaries have visible limitations.
+- **Cloud student/teacher workflows:** use **Sign in for cloud and classroom access** with Clerk. A teacher must be allowlisted by the backend administrator. Create a class, have a separately authenticated student join with its private code, then review that student's authorized evidence and propose/approve an intervention. Students start/complete approved work; teachers review feedback and paired reassessment. A local guest does not have teacher permissions.
+- **Study assistance:** select topic resources in Study Mode to retrieve PDF page excerpts. Python/pypdf performs extraction on the backend. External AI/OCR sharing requires explicit consent and configured providers. Unconfigured providers return honest fallbacks, not invented answers. Cloud resource access requires sign-in.
+
+There are no shared public passwords, anonymous teacher bypasses, or seeded records in an unidentified remote database.
+
+## Features and architecture
+
+| Area | Implemented capabilities |
+| --- | --- |
+| Student workspace | Topics/checklists, notes, resources, attendance, assignments, performance, calculator, local storage and scoped cloud sync |
+| GuruGraph | Deterministic evidence normalization, mastery estimates, gap classification, explanations and insufficient-evidence states |
+| Practice | Multi-page handwriting review, consent-gated OCR boundary, manual transcription, deterministic adaptive practice and progress |
+| Teachers and interventions | Owned classrooms, explicit enrollment, scoped evidence, intervention review/history, student follow-through and reassessment |
+| Study ecosystem | Local PDF extraction, relevant-page retrieval, optional provider answers and citation validation |
+| Release hardening | Clerk token checks, ownership enforcement, signed webhooks, bounded requests, rate limits, readiness and CI with isolated PostgreSQL |
+
+```mermaid
+flowchart LR
+  Students[Students and teachers] --> UI[React /app]
+  UI --> Local[Local browser records]
+  Local --> GG[GuruGraph deterministic intelligence]
+  UI --> Clerk[Clerk authentication]
+  UI --> API[Fastify /api]
+  API --> DB[Prisma / PostgreSQL]
+  API --> PDF[Python / pypdf retrieval]
+  API --> Storage[Optional R2 storage]
+  API --> Consent[Explicit sharing consent]
+  Consent --> Providers[Optional AI and OCR providers]
+```
+
+**DETECT → UNDERSTAND → EXPLAIN → INTERVENE → PRACTICE → REASSESS → CLOSE GAP → MEASURE IMPACT** describes the intended learning loop. The implementation distinguishes recorded evidence from estimates; a paired score change does not prove a gap is closed or establish causal impact.
+
+The actual stack is React 19, TypeScript, Vite, TanStack Query, Tailwind CSS, Radix UI and Framer Motion; Fastify, Zod, Clerk, Prisma/PostgreSQL; Python/pypdf for PDFs. Optional integrations include OpenAI, Anthropic, R2, Brave, YouTube and Fal.
+
+## Release and maintenance
+
+The repository includes a single-service [Dockerfile](Dockerfile) and free-plan [Render Blueprint](render.yaml). The same service serves the real frontend and API; `/` redirects to `/app/` and deep links receive the SPA. The legacy root files remain preserved in Git but are not the deployment homepage. No database migrations run automatically at service startup.
+
+See [deployment and recovery](docs/DEPLOYMENT.md) for account connection, database identification, secure environment setup, controlled migrations, read-only release checks, backup/rollback and cold-start limitations. Node 22.12+ and Python 3 with pypdf are required for the complete runtime. Never put database URLs or server API keys in `VITE_*` variables.
 
 ## Current implementation status
 
-The project has exactly seven phases. Phases 1 and 2 are committed. Phase 3's local-first handwriting and adaptive-practice workflow is implemented. Phase 4 adds role-scoped teacher classes, explicit enrollment, authorized rosters, and observed topic/assessment summaries. Phase 5 adds intervention proposals, lifecycle history, reassessment records, and teacher feedback. Phase 6 includes provider chat, a local study scaffold, and selected-resource study assistance with local PDF extraction and page-level retrieval; external sharing requires explicit consent. Phase 7 hardening and verification remain in progress. Teacher database migrations have not been applied because the configured database is remote and not identified as a safe test target. See [the progress record](docs/PROJECT_PROGRESS.md) for exact verification results and limits.
+The roadmap has exactly seven phases. Phases 1–6 are implemented with automated coverage; teacher/intervention persistence and both migrations passed against isolated PostgreSQL locally and in CI. Phase 7 release hardening is in progress. The public environment, live Clerk sign-in and external AI/OCR remain unverified. No remote Neon migration is claimed. See [the progress record](docs/PROJECT_PROGRESS.md) for evidence, historical checkpoints and limitations.
 
 The React application under `frontend/` is the primary app at `/app`; the legacy root application remains preserved. Teacher and student APIs enforce role and object ownership on the backend. See [frontend setup](frontend/README.md) and [backend setup](backend/README.md).
 

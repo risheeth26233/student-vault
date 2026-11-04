@@ -51,6 +51,8 @@ jobs:
         env:
           NODE_ENV: production
       - run: git diff --check
+      - name: Build deployable Node and Python release image
+        run: docker build --tag student-vault-release .
       - name: Stop isolated PostgreSQL
         if: always()
         shell: bash

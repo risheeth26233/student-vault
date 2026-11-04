@@ -32,7 +32,7 @@ export function WelcomePage() {
   // Enter the workspace with a local guest profile (no account, stays on this device)
   const handleGuest = () => {
     setProfile({ name: 'Guest', guest: true });
-    navigate('/vault');
+    navigate('/dashboard');
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -46,20 +46,8 @@ export function WelcomePage() {
 
     setLoading(true);
     
-    // If Clerk is configured, use it
-    if (window.Clerk?.session) {
-      try {
-        await signIn();
-        return;
-      } catch {
-        setError('Sign in failed. Please try again.');
-        setLoading(false);
-      }
-      return;
-    }
-
     // Local fallback
-    const newProfile = { name: name.trim().slice(0, 40), email: email.trim() || undefined };
+    const newProfile = { name: name.trim().slice(0, 40), email: email.trim() || undefined, guest: true };
     setProfile(newProfile);
     navigate('/vault');
   };
@@ -101,9 +89,17 @@ export function WelcomePage() {
 
           {/* Login Form */}
           <Card elevation={1} padding="lg">
+            <div className="mb-6 space-y-3 text-center">
+              <Button type="button" variant="outline" className="w-full" onClick={async () => {
+                setError('');
+                if (!window.Clerk) { setError('Account sign-in is not available. You can still use a local workspace below.'); return; }
+                try { await signIn(); } catch { setError('Account sign-in could not be opened. Please try again.'); }
+              }}>Sign in for cloud and classroom access</Button>
+              <p className="text-sm text-ink-muted">Teachers need an allowlisted Clerk account. Local workspaces do not grant access to cloud classrooms or private student records.</p>
+            </div>
             <div className="text-center mb-6">
               <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-2">Your Profile</p>
-              <h2 className="text-2xl font-semibold text-ink">Set up your vault</h2>
+              <h2 className="text-2xl font-semibold text-ink">Set up a local workspace</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>

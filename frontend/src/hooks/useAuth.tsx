@@ -89,16 +89,16 @@ export function AuthProvider({ children, publishableKey }: { children: ReactNode
     };
   }, [publishableKey]);
 
-  const signIn = useCallback(async (redirectUrl = '/') => {
+  const signIn = useCallback(async (redirectUrl = '/app/dashboard') => {
     await clerkSignIn(redirectUrl);
   }, []);
 
-  const signUp = useCallback(async (redirectUrl = '/') => {
+  const signUp = useCallback(async (redirectUrl = '/app/dashboard') => {
     // Clerk uses same flow for sign up
     await clerkSignIn(redirectUrl);
   }, []);
 
-  const signOut = useCallback(async (redirectUrl = '/') => {
+  const signOut = useCallback(async (redirectUrl = '/app/') => {
     await clerkSignOut(redirectUrl);
     setUser(null);
     setProfileState(null);

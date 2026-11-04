@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { registerWebhookBody } from "./plugins/webhook-body.js";
 import Fastify from "fastify";
+import type { FastifyError } from "fastify";
 import { loadEnv } from "./config/env.js";
 import { clerkAuthPlugin } from "./plugins/clerk-auth.js";
 import { registerRequestLimits } from "./plugins/request-limits.js";
@@ -27,6 +28,7 @@ import { clerkWebhookRoutes } from "./routes/clerk-webhook.js";
 import { syncRoutes } from "./routes/sync.js";
 import { teacherRoutes } from "./routes/teacher.js";
 import { prisma } from "./utils/prisma.js";
+import { registerFrontend } from "./routes/frontend.js";
 
 // Load and validate environment
 loadEnv();
@@ -64,6 +66,7 @@ await app.register(import("@fastify/cors"), {
 });
 
 // Clerk authentication
+if (process.env.FRONTEND_DIST_DIR) await registerFrontend(app, process.env.FRONTEND_DIST_DIR);
 registerWebhookBody(app);
 await clerkAuthPlugin(app);
 await registerRequestLimits(app);
@@ -88,7 +91,7 @@ await app.register(syncRoutes);
 await app.register(teacherRoutes);
 
 // Global error handler
-app.setErrorHandler((error, request, reply) => {
+app.setErrorHandler<FastifyError>((error, request, reply) => {
   app.log.error({ errorName: error.name, errorCode: error.code, statusCode: error.statusCode }, "Request failed");
 
   // Validation errors

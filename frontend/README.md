@@ -14,6 +14,8 @@ npm run build
 
 The dev server proxies `/api` to `http://localhost:3000`. Set `VITE_API_BASE` only when the backend uses another API origin.
 
+For a hosted Clerk sign-in, configure the public `VITE_CLERK_PUBLISHABLE_KEY` at build time. The combined Docker build takes it from `CLERK_PUBLISHABLE_KEY`; account secrets stay on the backend. The welcome screen separates real Clerk sign-in from a local guest workspace, which grants no cloud role. PWA assets and registration are scoped to `/app/` using VitePWA.
+
 Handwriting records are local-first and use the backend OCR endpoint only after explicit consent. The AI assistant never attaches saved notes or documents automatically. In the study page, the student can select up to four topic resources; PDF excerpts are retrieved on the Student-Vault backend and remain there unless the student enables external-sharing consent. Selected images may be sent to a configured OCR provider after that consent. The UI shows retrieved excerpts and extraction/provider errors separately from the generated answer. Teacher-only records are authorized on the backend, not by navigation visibility.
 
 ## Open the local website on Windows

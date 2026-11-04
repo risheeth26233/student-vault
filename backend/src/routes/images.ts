@@ -49,6 +49,7 @@ return async function imagesRoutes(app: FastifyInstance): Promise<void> {
       response: {
         200: generateResponseSchema,
         400: errorResponseSchema,
+        502: errorResponseSchema,
         503: errorResponseSchema,
       },
     },

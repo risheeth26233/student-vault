@@ -5,7 +5,7 @@ Backend API for Student Vault - a study organizer application.
 ## Quick Start
 
 ### Prerequisites
-- Node.js >= 20.0.0
+- Node.js >= 22.12.0
 - npm >= 9.0.0
 - PostgreSQL database (local, Neon, Supabase, etc.)
 

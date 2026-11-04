@@ -1,6 +1,19 @@
 # Student-Vault + GuruGraph Project Progress
 
-Last verified: 2026-11-03
+Last verified: 2026-11-04
+
+## Public release engineering — 2026-11-04
+
+The new release directive authorizes verified commits/pushes and a public deployment, superseding the previous local-only UI pass. Existing history and UI commit `20108da` are preserved.
+
+- Implemented a single-origin production service: explicit compiled frontend serving at `/app`, modern root redirect, SPA deep links, asset caching, private-file/source-map denial and unchanged API authentication. Added real filesystem route coverage. Corrected frontend icon/PWA scope and build-time Clerk publishable-key configuration. Separated actual cloud sign-in from guest-only local profiles, fixed auth redirects, bounded SDK loading and removed persistent bearer-token caching.
+- Added a non-root multi-stage Node 22/Python/pypdf Docker image, free-plan manual Render Blueprint, image-build CI step and read-only HTTP release checker. No startup migration or seed is enabled. Added deployment, Clerk/domain/webhook, environment, database-baseline and recovery instructions plus an actual guest-workspace screenshot and architecture/visitor documentation.
+- The current online backend production audit found 20 advisories, including critical/high issues not present in earlier cached results. Upgraded Fastify 5 and matching security plugins, replaced deprecated Clerk Node SDK with `@clerk/backend`, migrated to Zod 4 native JSON Schema, patched compatible dependencies and selected patched rimraf for Google's transport. Both online **production** dependency audits now report **zero advisories**. Development-only findings remain separate; the release image prunes development dependencies.
+- Frontend: **33 files / 235 tests passed**, build/typecheck passed and lint exited 0 with pre-existing React warnings. Backend after framework/schema upgrade: **44 passed / 1 skipped / 0 failed**, including actual PDF parsing and static-serving/auth boundaries; build/typecheck/lint passed after adapting Fastify 5 error/response typing. The skipped suite requires an isolated loopback database. Earlier real PostgreSQL results remain historical, not new remote persistence proof. Prisma validation and diff checks passed; local Docker is unavailable, so image execution is delegated to CI/Render and remains pending.
+- Authorized connected Render workspace: `Healthcare-App` (`tea-daseu2rbc2fs73evocf0`); owner confirmed a separate free Student-Vault service in Singapore. Inventory found only the unrelated Healthcare-App service, which was left untouched.
+- Confirmed Neon project `student-vault` (`autumn-shape-35490420`), branch `student-vault-test` (`br-super-pond-b3fgl16o`), database `neondb`, PostgreSQL 18. Only this branch was inspected through Neon; production was not queried or changed. It has the eight-table pre-teacher schema and no Prisma history. Aggregate users/topics/resources counts are all zero. It expires **2026-11-10**; persistent-demo retention requires an owner decision.
+- **No remote migration or seed has been applied.** Automatic approval review rejected a shell command containing the connection password and then rejected an echo-disabled terminal input because tool arguments are recorded. Neither database operation ran. A guarded helper now accepts an owner-created ignored environment file, uses schema-datasource references (not connection URLs in child arguments), defaults to a read-only baseline comparison, and requires `--apply` for the additive migration. The owner must configure the secure local environment before it can execute.
+- Clerk and AI/OCR keys are absent locally. Owner will set Clerk variables directly in Render, including the exact backend teacher allowlist `TEACHER_CLERK_IDS`. Live sign-in, webhook delivery, teacher/student UI persistence, provider calls and public browser verification remain pending. Computer Use stopped because it could not determine Chrome's URL reliably; it was not bypassed. No public URL or production-ready status is claimed at this checkpoint.
 
 ## Premium workspace UI and preview repair — 2026-11-03
 

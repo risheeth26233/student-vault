@@ -20,7 +20,7 @@ interface ClerkUser {
 interface Clerk {
   session: ClerkSession | null;
   user: ClerkUser | null;
-  load: (publishableKey: string) => Promise<void>;
+  load: (options: { publishableKey: string }) => Promise<void>;
   addListener: (callback: (params: { session: ClerkSession | null; user: ClerkUser | null }) => void) => void;
   openSignIn: (options: { redirectUrl: string }) => Promise<void>;
   openSignUp: (options: { redirectUrl: string }) => Promise<void>;
@@ -50,8 +50,7 @@ async function getSessionToken(): Promise<string | null> {
     }
   }
   
-  // Fallback: check for stored token
-  return localStorage.getItem('clerk_session_token') || null;
+  return null;
 }
 
 /**
@@ -633,7 +632,7 @@ export async function initClerk(publishableKey: string): Promise<Clerk | null> {
   
   // Load Clerk script if not already loaded
   if (!window.Clerk) {
-    await loadScript('https://cdn.clerk.dev/js/clerk-core.js');
+    await loadScript('https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js', publishableKey);
   }
   
   const clerk = window.Clerk;
@@ -642,20 +641,12 @@ export async function initClerk(publishableKey: string): Promise<Clerk | null> {
     return null;
   }
   
-  await clerk.load(publishableKey);
+  await clerk.load({ publishableKey });
   
   // Set up auth state change listener
   clerk.addListener(({ session, user }) => {
-    if (session) {
-      // Store session token for API requests
-      session.getToken().then(token => {
-        if (token) {
-          localStorage.setItem('clerk_session_token', token);
-        }
-      });
-    } else {
-      localStorage.removeItem('clerk_session_token');
-    }
+    // Tokens stay in Clerk's managed session; remove legacy cached tokens.
+    localStorage.removeItem('clerk_session_token');
     
     // Dispatch custom event for app to react
     window.dispatchEvent(new CustomEvent('clerk:auth-change', { 
@@ -718,20 +709,21 @@ export function isSignedIn() {
 /**
  * Load external script
  */
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
-    
+let clerkScriptLoading: Promise<void> | undefined;
+function loadScript(src: string, publishableKey: string): Promise<void> {
+  if (clerkScriptLoading) return clerkScriptLoading;
+  clerkScriptLoading = new Promise<void>((resolve, reject) => {
     const script = document.createElement('script');
     script.src = src;
+    script.crossOrigin = 'anonymous';
+    script.setAttribute('data-clerk-publishable-key', publishableKey);
     script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+    const timeout = window.setTimeout(() => { script.remove(); reject(new Error('Authentication script timed out')); }, 15000);
+    script.onload = () => { window.clearTimeout(timeout); resolve(); };
+    script.onerror = () => { window.clearTimeout(timeout); script.remove(); reject(new Error('Authentication script could not load')); };
     document.head.appendChild(script);
-  });
+  }).catch(error => { clerkScriptLoading = undefined; throw error; });
+  return clerkScriptLoading;
 }
 
 // Export all as default for convenience

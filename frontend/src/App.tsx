@@ -98,7 +98,7 @@ function PageOutlet() {
 export function App() {
   // Get Clerk publishable key from meta tag (same as legacy)
   const metaKey = document.querySelector('meta[name="clerk-publishable-key"]');
-  const publishableKey = metaKey?.getAttribute('content')?.trim() || '';
+  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim() || metaKey?.getAttribute('content')?.trim() || '';
 
   return (
     <QueryProvider>

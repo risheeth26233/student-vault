@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { createClerkClient } from "@clerk/clerk-sdk-node";
+import { createClerkClient, verifyToken } from "@clerk/backend";
 import { prisma } from "../utils/prisma.js";
 import { getEnv } from "../config/env.js";
 
@@ -72,7 +72,7 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
   // Add Clerk user to request after verification
   app.addHook("preHandler", async (request: AuthenticatedRequest, reply: FastifyReply) => {
     // Skip authentication for public routes
-    const publicRoutes = ["/api/health", "/api/ready", "/api/webhooks/clerk"];
+    const publicRoutes = ["/api/health", "/api/ready", "/api/webhooks/clerk", "/", "/app", "/app/*"];
     if (publicRoutes.includes(request.routeOptions.url || request.url.split("?")[0] || request.url)) {
       return;
     }
@@ -98,10 +98,9 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
 
     try {
       // Verify the session token
-      const session = await clerk.verifyToken(sessionToken, {
+      const session = await verifyToken(sessionToken, {
+        secretKey: env.CLERK_SECRET_KEY,
         authorizedParties: [env.FRONTEND_URL],
-        // Match the installed SDK's default issuer policy while supplying azp.
-        issuer: (iss) => iss.startsWith("https://clerk.") || iss.includes(".clerk.accounts"),
       });
       
       // Get user details
