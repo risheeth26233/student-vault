@@ -624,6 +624,7 @@ export const teacherApi = {
 /**
  * Initialize Clerk and set up auth state listener
  */
+const clerkInitializations = new WeakMap<Clerk, Promise<Clerk>>();
 export async function initClerk(publishableKey: string): Promise<Clerk | null> {
   if (!publishableKey) {
     console.warn('Clerk publishable key not provided');
@@ -637,10 +638,12 @@ export async function initClerk(publishableKey: string): Promise<Clerk | null> {
   
   const clerk = window.Clerk;
   if (!clerk) {
-    console.error('Clerk failed to load');
-    return null;
+    throw new Error('Account sign-in could not initialize. Please reload and try again.');
   }
   
+  const existing = clerkInitializations.get(clerk);
+  if (existing) return existing;
+  const initialization = (async () => {
   await clerk.load({ publishableKey });
   
   // Set up auth state change listener
@@ -655,24 +658,25 @@ export async function initClerk(publishableKey: string): Promise<Clerk | null> {
   });
   
   return clerk;
+  })().catch(error => { clerkInitializations.delete(clerk); throw error; });
+  clerkInitializations.set(clerk, initialization);
+  return initialization;
 }
 
 /**
  * Sign in with Clerk
  */
-export async function signIn(redirectUrl = '/') {
-  if (window.Clerk) {
-    await window.Clerk.openSignIn({ redirectUrl });
-  }
+export async function signIn(redirectUrl = '/app/dashboard') {
+  if (!window.Clerk) throw new Error('Account sign-in is unavailable. Please reload and try again.');
+  await window.Clerk.openSignIn({ redirectUrl });
 }
 
 /**
  * Sign up with Clerk
  */
-export async function signUp(redirectUrl = '/') {
-  if (window.Clerk) {
-    await window.Clerk.openSignUp({ redirectUrl });
-  }
+export async function signUp(redirectUrl = '/app/dashboard') {
+  if (!window.Clerk) throw new Error('Account signup is unavailable. Please reload and try again.');
+  await window.Clerk.openSignUp({ redirectUrl });
 }
 
 /**

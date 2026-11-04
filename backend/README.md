@@ -108,6 +108,8 @@ For an existing database created with `prisma db push` or another untracked setu
 
 ## Teacher accounts
 
+Clerk account signup and signin are separate frontend actions; local guest profiles do not grant server access. The backend verifies bearer tokens with the configured Clerk instance and restricts authorized parties to the exact `FRONTEND_URL` origin. Only exact Clerk IDs in `TEACHER_CLERK_IDS` receive the teacher role. API callers cannot assign roles. Account persistence failures return a sanitized 503 rather than falsely reporting an expired token. Configure the primary Clerk email address and ensure display names fit the 40-character application limit.
+
 Set `TEACHER_CLERK_IDS` to a comma-separated allowlist of Clerk user IDs. The backend derives the role from this list on authenticated requests; users cannot change their own role. A teacher creates a class and shares its private join code. Students explicitly join with that code. Teacher API queries require the class to belong to the current teacher and include only active enrollments. The current dashboard shows recorded topic states and assessment records; GuruGraph mastery is not persisted server-side.
 
 ## API Endpoints

@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { initClerk, signIn as clerkSignIn, signOut as clerkSignOut, getCurrentUser } from '../services/api';
+import { initClerk, signIn as clerkSignIn, signUp as clerkSignUp, signOut as clerkSignOut, getCurrentUser } from '../services/api';
 import { loadProfile, saveProfile } from '../services/storage';
 
 interface UserProfile {
@@ -17,6 +17,7 @@ interface AuthContextType {
   user: unknown | null;
   profile: UserProfile | null;
   isLoading: boolean;
+  authError: string | null;
   isAuthenticated: boolean;
   signIn: (redirectUrl?: string) => Promise<void>;
   signUp: (redirectUrl?: string) => Promise<void>;
@@ -30,10 +31,12 @@ export function AuthProvider({ children, publishableKey }: { children: ReactNode
   const [user, setUser] = useState<unknown | null>(null);
   const [profile, setProfileState] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Initialize auth on mount
   useEffect(() => {
     let mounted = true;
+    window.addEventListener('clerk:auth-change', handleAuthChange as EventListener);
     
     async function initializeAuth() {
       try {
@@ -49,15 +52,12 @@ export function AuthProvider({ children, publishableKey }: { children: ReactNode
           if (mounted) {
             setUser(getCurrentUser());
             setProfileState(prev => prev || (getCurrentUser() ? { name: (getCurrentUser() as any)?.firstName || (getCurrentUser() as any)?.username || 'Student' } : null));
-            
-            // Listen for auth changes
-            window.addEventListener('clerk:auth-change', handleAuthChange as EventListener);
           }
         } else {
           console.warn('Clerk publishable key not configured. Using local-only mode.');
         }
-      } catch (error) {
-        console.error('Clerk initialization failed:', error);
+      } catch {
+        if (mounted) setAuthError('Account sign-in could not connect. Reload to retry, or use a local guest workspace.');
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -66,6 +66,7 @@ export function AuthProvider({ children, publishableKey }: { children: ReactNode
     }
     
     function handleAuthChange(event: Event) {
+      if (!mounted) return;
       const customEvent = event as CustomEvent;
       const { session, user: clerkUser } = customEvent.detail;
       
@@ -94,8 +95,7 @@ export function AuthProvider({ children, publishableKey }: { children: ReactNode
   }, []);
 
   const signUp = useCallback(async (redirectUrl = '/app/dashboard') => {
-    // Clerk uses same flow for sign up
-    await clerkSignIn(redirectUrl);
+    await clerkSignUp(redirectUrl);
   }, []);
 
   const signOut = useCallback(async (redirectUrl = '/app/') => {
@@ -115,6 +115,7 @@ export function AuthProvider({ children, publishableKey }: { children: ReactNode
       user,
       profile,
       isLoading,
+      authError,
       isAuthenticated: !!user || !!profile,
       signIn,
       signUp,

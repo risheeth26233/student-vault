@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { createClerkClient, verifyToken } from "@clerk/backend";
 import { prisma } from "../utils/prisma.js";
 import { getEnv } from "../config/env.js";
+import type { PrismaClient } from "@prisma/client";
 
 const env = getEnv();
 
@@ -35,8 +36,8 @@ export interface AuthenticatedRequest extends FastifyRequest {
   };
 }
 
-async function getOrCreateDbUser(clerkUser: ClerkUser) {
-  const teacherIds = new Set((env.TEACHER_CLERK_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean));
+async function getOrCreateDbUser(clerkUser: ClerkUser, prisma: PrismaClient, allowlist = env.TEACHER_CLERK_IDS) {
+  const teacherIds = new Set((allowlist ?? "").split(",").map((id) => id.trim()).filter(Boolean));
   const role = teacherIds.has(clerkUser.id) ? "teacher" : "student";
   const existingUser = await prisma.user.findUnique({
     where: { clerkId: clerkUser.id },
@@ -68,7 +69,14 @@ async function getOrCreateDbUser(clerkUser: ClerkUser) {
   });
 }
 
-export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
+export function createClerkAuthPlugin(options: {
+  db?: PrismaClient;
+  config?: typeof env;
+  client?: () => ReturnType<typeof createClerkClient> | null;
+  verify?: typeof verifyToken;
+} = {}) {
+const config = options.config ?? env;
+return async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
   // Add Clerk user to request after verification
   app.addHook("preHandler", async (request: AuthenticatedRequest, reply: FastifyReply) => {
     // Skip authentication for public routes
@@ -86,7 +94,7 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
     }
 
     const sessionToken = authHeader.slice(7); // Remove "Bearer "
-    const clerk = getClerkClient();
+    const clerk = (options.client ?? getClerkClient)();
 
     if (!clerk) {
       app.log.error("Clerk not configured");
@@ -98,9 +106,9 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
 
     try {
       // Verify the session token
-      const session = await verifyToken(sessionToken, {
-        secretKey: env.CLERK_SECRET_KEY,
-        authorizedParties: [env.FRONTEND_URL],
+      const session = await (options.verify ?? verifyToken)(sessionToken, {
+        secretKey: config.CLERK_SECRET_KEY,
+        authorizedParties: [config.FRONTEND_URL],
       });
       
       // Get user details
@@ -108,17 +116,22 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
       
       const clerkUser: ClerkUser = {
         id: user.id,
-        email: user.emailAddresses[0]?.emailAddress || "",
-        firstName: user.firstName,
+        email: (user.emailAddresses.find(email => email.id === user.primaryEmailAddressId) ?? user.emailAddresses[0])?.emailAddress || "",
+        firstName: user.firstName?.slice(0, 40) ?? null,
         lastName: user.lastName,
-        username: user.username,
+        username: user.username?.slice(0, 40) ?? null,
         imageUrl: user.imageUrl,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       };
 
       // Get or create database user
-      const dbUser = await getOrCreateDbUser(clerkUser);
+      let dbUser;
+      try { dbUser = await getOrCreateDbUser(clerkUser, options.db ?? prisma, config.TEACHER_CLERK_IDS); }
+      catch {
+        app.log.warn("Authenticated account persistence unavailable");
+        return reply.status(503).send({ error: "account_unavailable", message: "Your account could not be loaded. Please try again later." });
+      }
 
       request.clerkUser = clerkUser;
       request.dbUser = {
@@ -135,7 +148,10 @@ export async function clerkAuthPlugin(app: FastifyInstance): Promise<void> {
       });
     }
   });
+};
 }
+
+export const clerkAuthPlugin = createClerkAuthPlugin();
 
 export function getDbUserId(request: AuthenticatedRequest): string | null {
   return request.dbUser?.id || null;

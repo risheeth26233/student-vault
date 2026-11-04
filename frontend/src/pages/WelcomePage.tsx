@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
 export function WelcomePage() {
-  const { isAuthenticated, signIn, setProfile } = useAuth();
+  const { isAuthenticated, signIn, signUp, authError, setProfile } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -89,12 +89,17 @@ export function WelcomePage() {
 
           {/* Login Form */}
           <Card elevation={1} padding="lg">
+            {authError && <p role="alert" className="text-sm text-coral-600 mb-4">{authError}</p>}
             <div className="mb-6 space-y-3 text-center">
               <Button type="button" variant="outline" className="w-full" onClick={async () => {
                 setError('');
                 if (!window.Clerk) { setError('Account sign-in is not available. You can still use a local workspace below.'); return; }
                 try { await signIn(); } catch { setError('Account sign-in could not be opened. Please try again.'); }
               }}>Sign in for cloud and classroom access</Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={async () => {
+                setError('');
+                try { await signUp(); } catch { setError('Account signup could not be opened. Reload to retry or use a local workspace.'); }
+              }}>Create a student account</Button>
               <p className="text-sm text-ink-muted">Teachers need an allowlisted Clerk account. Local workspaces do not grant access to cloud classrooms or private student records.</p>
             </div>
             <div className="text-center mb-6">
