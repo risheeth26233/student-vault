@@ -6,11 +6,17 @@ const mocks = vi.hoisted(() => ({
   providers: vi.fn(),
   chat: vi.fn(),
   study: vi.fn(),
+  getTopic: vi.fn(),
+  saveNotes: vi.fn(),
   topics: [] as Array<{ id: string; subject: string; title: string; notes: string }>,
   resources: [] as Array<{ id: string; topicId: string; name: string; mimeType: string; downloadUrl: string | null; data: string | null }>,
 }));
 vi.mock('../../services/api', () => ({ aiApi: { providers: mocks.providers, chat: mocks.chat, study: mocks.study } }));
-vi.mock('../../hooks/useTopics', () => ({ useAllTopics: () => ({ data: { topics: mocks.topics } }) }));
+vi.mock('../../hooks/useTopics', () => ({
+  useAllTopics: () => ({ data: { topics: mocks.topics } }),
+  useSaveTopicNotes: () => ({ mutateAsync: mocks.saveNotes, isPending: false }),
+}));
+vi.mock('../../services/topicStore', () => ({ getTopic: mocks.getTopic }));
 vi.mock('../../hooks/useResources', () => ({ useResources: () => ({ data: { resources: mocks.resources }, isPending: false }) }));
 
 import { AIPage } from '../AIPage';
@@ -27,8 +33,27 @@ describe('AIPage', () => {
     fireEvent.change(screen.getByLabelText('Your study question'), { target: { value: 'Explain recursion' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send question' }));
     await screen.findByText('Try a small example first.');
-    expect(mocks.chat).toHaveBeenCalledWith({ messages: expect.arrayContaining([expect.objectContaining({ role: 'user', content: 'Explain recursion' })]) });
+    expect(mocks.chat).toHaveBeenCalledWith(expect.objectContaining({ messages: expect.arrayContaining([expect.objectContaining({ role: 'user', content: 'Explain recursion' })]) }));
     expect(mocks.chat.mock.calls[0][0].messages.some((message: { content: string }) => message.content.includes('Student notes'))).toBe(false);
+  });
+
+  it('adds a requested AI answer without replacing the latest notes', async () => {
+    mocks.topics = [{ id: 'topic-1', subject: 'Math', title: 'Fractions', notes: 'Old snapshot' }];
+    mocks.getTopic.mockResolvedValue({ notes: 'Existing notes' });
+    mocks.saveNotes.mockResolvedValue({});
+    mocks.providers.mockResolvedValue({ providers: ['openai'] });
+    mocks.chat.mockResolvedValue({ content: 'Use a common denominator.' });
+    render(<AIPage />);
+    await screen.findByText('Available providers: openai');
+    fireEvent.change(screen.getByLabelText('Study topic'), { target: { value: 'topic-1' } });
+    fireEvent.change(screen.getByLabelText('Your study question'), { target: { value: 'How do I add fractions?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send question' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Add to notes for Fractions' }));
+    await screen.findByText('Added to your notes for Fractions.');
+    expect(mocks.saveNotes).toHaveBeenCalledWith({
+      id: 'topic-1',
+      notes: 'Existing notes\n\n---\n\nAI study notes (review before relying)\n\nHow do I add fractions?\n\nUse a common denominator.',
+    });
   });
 
   it('handles provider outage and keeps the typed question available for retry', async () => {

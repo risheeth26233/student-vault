@@ -250,7 +250,7 @@ export function LearningInsightsPage() {
 
             <Section
               title="Supported gap categories"
-              description="GuruGraph keeps five states deliberately distinguishable. Only candidate findings are ever shown."
+              description="Learning Insights separates five evidence states and labels findings as candidates."
             >
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {vm.supportedCategories.map((category) => (

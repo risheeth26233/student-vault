@@ -1,170 +1,70 @@
-// Welcome Page - Landing / Auth page
-
-import { Card } from '../components/ui/Card';
+import { BookOpen, CalendarCheck, NotebookPen, Sparkles, Video } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { AppLayout } from '../components/layout/AppLayout';
-import { BookOpen, GraduationCap, Target, Sparkles, Calendar } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+
+const tools = [
+  { icon: CalendarCheck, title: 'Attendance calculator', description: 'Record classes and track your attendance against your target.', path: '/attendance' },
+  { icon: NotebookPen, title: 'Notes and topics', description: 'Keep your notes and study materials organized by subject and topic.', path: '/notes' },
+  { icon: Video, title: 'Find related videos', description: 'Look up a topic or doubt and watch a walkthrough on YouTube.', path: '/youtube' },
+  { icon: Sparkles, title: 'AI study notes', description: 'Ask for a detailed explanation and save useful answers to a topic when AI is available.', path: '/ai' },
+];
 
 export function WelcomePage() {
-  const { isAuthenticated, signIn, signUp, authError, setProfile } = useAuth();
+  const { isAuthenticated, isLoading, signIn, signUp, authError, setProfile } = useAuth();
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/vault', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  if (isAuthenticated && !isLoading) return <Navigate to="/dashboard" replace />;
 
-  if (isAuthenticated) {
-    return null;
+  function openWorkspace(path: string) {
+    setProfile({ name: 'Guest', guest: true });
+    navigate(path);
   }
 
-  // Enter the workspace with a local guest profile (no account, stays on this device)
-  const handleGuest = () => {
-    setProfile({ name: 'Guest', guest: true });
-    navigate('/dashboard');
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  async function openAccount(create: boolean) {
     setError('');
-    
-    if (!name.trim()) {
-      setError('Enter your name to continue');
-      return;
+    try {
+      await (create ? signUp() : signIn());
+    } catch {
+      setError('Account access is unavailable right now. You can still use the guest workspace.');
     }
-
-    setLoading(true);
-    
-    // Local fallback
-    const newProfile = { name: name.trim().slice(0, 40), email: email.trim() || undefined, guest: true };
-    setProfile(newProfile);
-    navigate('/vault');
-  };
-
-  const features = [
-    { icon: BookOpen, title: 'Study by Topic', desc: 'Organize subjects, topics, and exam dates with checklists' },
-    { icon: GraduationCap, title: 'Track Attendance', desc: 'Mark classes present/absent and monitor your percentage' },
-    { icon: Target, title: 'Attach Resources', desc: 'Keep PDFs and images with the right topic' },
-    { icon: Sparkles, title: 'AI Assistant', desc: 'Get explanations, generate diagrams, search the web' },
-  ];
+  }
 
   return (
-    <AppLayout>
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-4xl">
-          {/* Hero Section */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-50 text-teal-700 text-sm font-semibold mb-6">
-              <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" aria-hidden="true"></span>
-              Student Workspace
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight mb-4">
-              Prepare with a plan.
-            </h1>
-            <p className="text-lg sm:text-xl text-ink-muted max-w-2xl mx-auto mb-8">
-              Organize your subjects, study resources, and exam revision in one focused place.
-            </p>
-            
-            {/* Feature Pills */}
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
-              {features.map((feature, i) => (
-                <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-border text-sm text-ink-muted">
-                  <feature.icon className="w-4 h-4 text-teal-600" aria-hidden="true" />
-                  <span className="font-medium text-ink">{feature.title}</span>
-                </div>
-              ))}
-            </div>
+    <main className="min-h-screen bg-surface text-ink">
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <span className="inline-flex items-center gap-2 font-extrabold tracking-wide">
+            <BookOpen className="h-6 w-6 text-teal-700" aria-hidden="true" /> STUDENT VALUT
+          </span>
+          <Button variant="outline" disabled={isLoading} onClick={() => void openAccount(false)}>Sign in</Button>
+        </header>
+        <section className="py-12 sm:py-16">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-teal-700">For school and college students</p>
+          <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight sm:text-6xl">Your everyday study workspace</h1>
+          <p className="mt-4 max-w-2xl text-lg text-ink-muted">
+            Keep track of classes, store your notes, and find help when a topic leaves you with a question.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button size="lg" disabled={isLoading} onClick={() => openWorkspace('/dashboard')}>Continue as guest</Button>
+            <Button size="lg" variant="ghost" disabled={isLoading} onClick={() => void openAccount(true)}>Create a student account</Button>
           </div>
-
-          {/* Login Form */}
-          <Card elevation={1} padding="lg">
-            {authError && <p role="alert" className="text-sm text-coral-600 mb-4">{authError}</p>}
-            <div className="mb-6 space-y-3 text-center">
-              <Button type="button" variant="outline" className="w-full" onClick={async () => {
-                setError('');
-                if (!window.Clerk) { setError('Account sign-in is not available. You can still use a local workspace below.'); return; }
-                try { await signIn(); } catch { setError('Account sign-in could not be opened. Please try again.'); }
-              }}>Sign in for cloud and classroom access</Button>
-              <Button type="button" variant="ghost" className="w-full" onClick={async () => {
-                setError('');
-                try { await signUp(); } catch { setError('Account signup could not be opened. Reload to retry or use a local workspace.'); }
-              }}>Create a student account</Button>
-              <p className="text-sm text-ink-muted">Teachers need an allowlisted Clerk account. Local workspaces do not grant access to cloud classrooms or private student records.</p>
-            </div>
-            <div className="text-center mb-6">
-              <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-2">Your Profile</p>
-              <h2 className="text-2xl font-semibold text-ink">Set up a local workspace</h2>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-              <Input
-                label="Your name"
-                placeholder="Aarav"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoComplete="name"
-                maxLength={40}
-                error={error}
-              />
-              <Input
-                label="Email (optional)"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-              
-              {error && (
-                <p className="text-sm text-coral-600 font-medium" role="alert">
-                  {error}
-                </p>
-              )}
-
-              <Button type="submit" className="w-full" size="lg" loading={loading}>
-                Continue to vault
-              </Button>
-            </form>
-
-            <p className="mt-4 text-center text-sm text-ink-muted">
-              Or <button type="button" onClick={handleGuest} className="text-teal-600 hover:underline font-medium">continue as guest</button> (local only)
-            </p>
-          </Card>
-
-          {/* Quick Tool */}
-          <div className="mt-8 text-center">
-            <Card elevation={1} padding="lg" className="max-w-md mx-auto">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-teal-600" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide">Quick Tool</p>
-                  <h3 className="font-semibold text-ink">Attendance Calculator</h3>
-                </div>
-              </div>
-              <p className="text-ink-muted mb-6">Mark each subject present or absent. No login needed.</p>
-              <Link to="/attendance">
-                <Button variant="outline" className="w-full">
-                  Open calculator
-                </Button>
-              </Link>
-            </Card>
-          </div>
-        </div>
+          <p className="mt-3 text-sm text-ink-muted">Guest notes and attendance stay in this browser.</p>
+          {(error || authError) && <p className="mt-3 text-sm text-ink-muted" role="alert">{error || authError}</p>}
+        </section>
+        <section aria-label="Student tools" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {tools.map(({ icon: Icon, title, description, path }) => (
+            <button key={path} type="button" disabled={isLoading} onClick={() => openWorkspace(path)}
+              className="rounded-2xl border border-border bg-white p-5 text-left transition-colors hover:border-teal-600 focus-visible:outline-2 focus-visible:outline-teal-600">
+              <Icon className="mb-3 h-6 w-6 text-teal-700" aria-hidden="true" />
+              <span className="block font-bold">{title}</span>
+              <span className="mt-2 block text-sm leading-relaxed text-ink-muted">{description}</span>
+            </button>
+          ))}
+        </section>
       </div>
-    </AppLayout>
+    </main>
   );
 }

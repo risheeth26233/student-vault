@@ -1,6 +1,6 @@
-# Student-Vault × GuruGraph
+# STUDENT VALUT
 
-An academic workspace combining student organization, explainable learning intelligence, adaptive practice, and teacher-supported interventions.
+An everyday study workspace for school and college students. Track attendance, keep notes, find a video when you are stuck, and turn an AI explanation into revision notes.
 
 [![Verify application](https://github.com/risheeth26233/student-vault/actions/workflows/verify.yml/badge.svg)](https://github.com/risheeth26233/student-vault/actions/workflows/verify.yml)
 
@@ -14,7 +14,10 @@ The screenshot shows the actual application with an empty, synthetic guest profi
 
 ## Explore the application
 
-- **Local student workspace:** open `/app/`, continue as guest or create a local profile. Add subjects/topics in My Vault, notes/resources, attendance, assignments and assessment results. These records stay in this browser until an explicitly supported cloud sync is requested.
+- **Attendance** — log present or absent classes by subject and track the percentage against your target.
+- **Notes** — create a topic in My Vault and keep its notes together. Guest notes and attendance stay in this browser.
+- **Related videos** — enter your doubt or topic on YouTube and use the direct search link when in-app search is unavailable.
+- **AI study notes** — ask for a detailed explanation and save a provider-generated answer to the selected topic. Hosted AI requires sign-in and a configured provider. The local review guide can help structure revision when hosted AI is unavailable.
 - **Learning Insights:** open Insights after recording evidence. Expand explanations to distinguish observations from estimates. Missing evidence is shown honestly.
 - **Practice:** open Practice, select a topic, upload supported page images, and review transcription. Manual transcription works without OCR. Generated practice and progress summaries have visible limitations.
 - **Cloud student/teacher workflows:** use **Sign in for cloud and classroom access** with Clerk. A teacher must be allowlisted by the backend administrator. Create a class, have a separately authenticated student join with its private code, then review that student's authorized evidence and propose/approve an intervention. Students start/complete approved work; teachers review feedback and paired reassessment. A local guest does not have teacher permissions.
@@ -27,7 +30,7 @@ There are no shared public passwords, anonymous teacher bypasses, or seeded reco
 | Area | Implemented capabilities |
 | --- | --- |
 | Student workspace | Topics/checklists, notes, resources, attendance, assignments, performance, calculator, local storage and scoped cloud sync |
-| GuruGraph | Deterministic evidence normalization, mastery estimates, gap classification, explanations and insufficient-evidence states |
+| Learning Insights | Deterministic evidence normalization, mastery estimates, gap classification, explanations and insufficient-evidence states |
 | Practice | Multi-page handwriting review, consent-gated OCR boundary, manual transcription, deterministic adaptive practice and progress |
 | Teachers and interventions | Owned classrooms, explicit enrollment, scoped evidence, intervention review/history, student follow-through and reassessment |
 | Study ecosystem | Local PDF extraction, relevant-page retrieval, optional provider answers and citation validation |
@@ -37,7 +40,7 @@ There are no shared public passwords, anonymous teacher bypasses, or seeded reco
 flowchart LR
   Students[Students and teachers] --> UI[React /app]
   UI --> Local[Local browser records]
-  Local --> GG[GuruGraph deterministic intelligence]
+  Local --> GG[Learning Insights]
   UI --> Clerk[Clerk authentication]
   UI --> API[Fastify /api]
   API --> DB[Prisma / PostgreSQL]

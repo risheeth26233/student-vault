@@ -126,7 +126,7 @@ export function DashboardPage() {
 
             <Card elevation={1} padding="lg" className="text-center">
               <LayoutDashboard className="w-16 h-16 text-border mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-ink mb-2">Welcome to Student Vault</h2>
+              <h2 className="text-xl font-semibold text-ink mb-2">Welcome to STUDENT VALUT</h2>
               <p className="text-ink-muted mb-6 max-w-md mx-auto">
                 You're viewing a local preview. Sign in to sync your data across devices and access all features.
               </p>
@@ -158,7 +158,7 @@ export function DashboardPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link to={stats.totalTopics ? '/study' : '/vault'}><Button>{stats.totalTopics ? 'Start a study session' : 'Add your first topic'}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button></Link>
-            <Link to="/insights"><Button variant="outline">Learning Insights</Button></Link>
+            <Link to="/notes"><Button variant="outline">Open notes</Button></Link>
           </div>
         </section>
 

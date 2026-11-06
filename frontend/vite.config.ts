@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['assets/icon-192.svg', 'assets/icon-512.svg'],
       manifest: {
-        name: 'Student Vault',
-        short_name: 'Student Vault',
+        name: 'STUDENT VALUT',
+        short_name: 'STUDENT VALUT',
         description: 'A browser-based study organizer for exam preparation',
         start_url: '/app/',
         display: 'standalone',

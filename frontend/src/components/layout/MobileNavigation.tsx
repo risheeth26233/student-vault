@@ -121,12 +121,12 @@ export function MobileNavigation() {
           <button 
             onClick={() => handleNavigation('/vault')}
             className="flex items-center gap-3 text-ink font-extrabold text-lg"
-            aria-label="Student Vault home"
+            aria-label="STUDENT VALUT home"
           >
             <span className="brand-mark" aria-hidden="true">
               <LayoutDashboard className="w-5 h-5" />
             </span>
-            <span>Student Vault</span>
+            <span>STUDENT VALUT</span>
           </button>
           
           <button
@@ -139,7 +139,7 @@ export function MobileNavigation() {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Main navigation">
-          {navItems.map(item => {
+          {navItems.filter(item => item.id !== 'teacher' || Boolean(user)).map(item => {
             const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
             const Icon = item.icon;
             

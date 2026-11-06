@@ -15,19 +15,19 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: Gauge },
   { id: 'vault', label: 'My Vault', href: '/vault', icon: LayoutDashboard },
+  { id: 'attendance', label: 'Attendance', href: '/attendance', icon: Calendar },
+  { id: 'youtube', label: 'YouTube', href: '/youtube', icon: Video },
+  { id: 'ai', label: 'AI Assistant', href: '/ai', icon: MessageSquare },
   { id: 'notes', label: 'Notes', href: '/notes', icon: NotebookPen },
   { id: 'documents', label: 'Documents', href: '/documents', icon: FileText },
   { id: 'assignments', label: 'Assignments', href: '/assignments', icon: ClipboardList },
-  { id: 'attendance', label: 'Attendance', href: '/attendance', icon: Calendar },
   { id: 'performance', label: 'Performance', href: '/performance', icon: TrendingUp },
   { id: 'insights', label: 'Insights', href: '/insights', icon: Lightbulb },
   { id: 'handwriting', label: 'Practice', href: '/handwriting', icon: PenLine },
   { id: 'teacher', label: 'Classes', href: '/teacher', icon: Users },
   { id: 'calculator', label: 'Calculator', href: '/calculator', icon: Calculator },
   { id: 'study', label: 'Study Mode', href: '/study', icon: Timer },
-  { id: 'youtube', label: 'YouTube', href: '/youtube', icon: Video },
   { id: 'search', label: 'Search', href: '/search', icon: Search },
-  { id: 'ai', label: 'AI Assistant', href: '/ai', icon: MessageSquare },
   { id: 'images', label: 'Images', href: '/images', icon: Image },
   { id: 'sync', label: 'Sync', href: '/sync', icon: Cloud },
 ];
@@ -91,12 +91,12 @@ export function Sidebar() {
           <button 
             onClick={() => navigate('/vault')}
             className={cn('flex items-center gap-3 text-ink font-extrabold text-lg transition-opacity', collapsed && 'opacity-0 pointer-events-none w-0')}
-            aria-label="Student Vault home"
+            aria-label="STUDENT VALUT home"
           >
             <span className="brand-mark" aria-hidden="true">
               <BookOpen className="w-5 h-5" />
             </span>
-            <span>Student Vault</span>
+            <span>STUDENT VALUT</span>
           </button>
           
           <button
@@ -110,7 +110,7 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto" aria-label="Main navigation">
-          {navItems.map(item => {
+          {navItems.filter(item => item.id !== 'teacher' || Boolean(user)).map(item => {
             const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
             const Icon = item.icon;
             

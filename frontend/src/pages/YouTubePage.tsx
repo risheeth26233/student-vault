@@ -261,6 +261,13 @@ export function YouTubePage() {
                   Search
                 </Button>
               </div>
+              {query.trim() && (
+                <a className="inline-flex min-h-10 items-center font-semibold text-teal-700 underline"
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`}
+                  target="_blank" rel="noopener noreferrer">
+                  Search directly on YouTube (opens a new tab)
+                </a>
+              )}
             </form>
           </Card>
 

@@ -110,12 +110,12 @@ export function Topbar() {
             <button 
               onClick={() => handleNavigation('/vault')}
               className="flex items-center gap-3 text-ink font-extrabold text-lg lg:hidden"
-              aria-label="Student Vault home"
+              aria-label="STUDENT VALUT home"
             >
               <span className="brand-mark" aria-hidden="true">
                 <BookOpen className="w-5 h-5" />
               </span>
-              <span className="hidden lg:block">Student Vault</span>
+              <span className="hidden lg:block">STUDENT VALUT</span>
             </button>
 
             {/* Page Title (Desktop) */}
@@ -255,7 +255,7 @@ export function Topbar() {
           aria-label="Mobile navigation"
         >
           <nav className="flex flex-col gap-1">
-            {navItems.map(item => {
+            {navItems.filter(item => item.id !== 'teacher' || Boolean(user)).map(item => {
               const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
               const Icon = item.icon;
               
