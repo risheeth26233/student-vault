@@ -107,7 +107,7 @@ describe('SubmissionComposer', () => {
 
     await waitFor(() => expect(screen.getByTestId('page-preview-1')).toBeTruthy());
     expect(screen.getByTestId('page-preview-2')).toBeTruthy();
-    expect(screen.getByAltText('Page 1 of p1.jpg').getAttribute('src')).toBe('data:image/png;base64,PREVIEW');
+    expect((await screen.findByAltText('Page 1 of p1.jpg')).getAttribute('src')).toBe('data:image/png;base64,PREVIEW');
     expect(screen.getByTestId('composer-page-count').textContent).toContain('2/8');
     expect(addDocument).toHaveBeenCalledTimes(2);
 

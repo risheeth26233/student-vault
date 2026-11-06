@@ -12,11 +12,11 @@ const tools = [
 ];
 
 export function WelcomePage() {
-  const { isAuthenticated, isLoading, signIn, signUp, authError, setProfile } = useAuth();
+  const { user, isLoading, signIn, signUp, authError, setProfile } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
-  if (isAuthenticated && !isLoading) return <Navigate to="/dashboard" replace />;
+  if (user && !isLoading) return <Navigate to="/dashboard" replace />;
 
   function openWorkspace(path: string) {
     setProfile({ name: 'Guest', guest: true });
