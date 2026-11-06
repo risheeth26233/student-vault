@@ -77,8 +77,10 @@ export function AuthProvider({ children, publishableKey }: { children: ReactNode
         saveProfile(newProfile);
       } else {
         setUser(null);
-        setProfileState(null);
-        saveProfile(null);
+        if (!loadProfile()?.guest) {
+          setProfileState(null);
+          saveProfile(null);
+        }
       }
     }
     

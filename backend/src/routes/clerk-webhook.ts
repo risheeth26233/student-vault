@@ -17,7 +17,9 @@ const clerkWebhookEventZod = z.object({
   type: z.string(),
   data: z.object({
     id: z.string(),
+    primary_email_address_id: z.string().nullable().optional(),
     email_addresses: z.array(z.object({
+      id: z.string().optional(),
       email_address: z.string().email(),
     })).optional(),
     first_name: z.string().nullable().optional(),
@@ -73,7 +75,8 @@ return async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
         case "user.created":
         case "user.updated": {
           const userData = event.data;
-          const email = userData.email_addresses?.[0]?.email_address;
+          const email = (userData.email_addresses?.find(address => address.id === userData.primary_email_address_id) ?? userData.email_addresses?.[0])?.email_address;
+          const name = (userData.first_name || userData.username || "User").slice(0, 40);
           
           if (!email) {
             return reply.status(400).send({ error: "invalid_data", message: "User email not found" });
@@ -84,11 +87,11 @@ return async function clerkWebhookRoutes(app: FastifyInstance): Promise<void> {
             create: {
               clerkId: userData.id,
               email,
-              name: userData.first_name || userData.username || "User",
+              name,
             },
             update: {
               email,
-              name: userData.first_name || userData.username || "User",
+              name,
             },
           });
           break;

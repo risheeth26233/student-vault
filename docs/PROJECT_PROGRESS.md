@@ -1,6 +1,13 @@
 # Student-Vault + GuruGraph Project Progress
 
-Last verified: 2026-11-04
+Last verified: 2026-11-06
+
+## Public student release checkpoint — 2026-11-06
+
+- The public preview leads with attendance, topic notes, related videos, and study assistance. Learning Insights and Practice remain optional. Attendance and notes can use browser storage in guest mode, and video search has a direct YouTube fallback.
+- Fixed guest session loss when Clerk reports no signed-in account on startup. A signed-out cloud profile is still cleared. The Clerk webhook selects the primary email when available and bounds the profile name before persistence.
+- Verification for this pass: 241 frontend tests passed, 47 backend tests passed, and the opt-in PostgreSQL integration test was skipped. Both production builds passed. The public smoke check passed 10 of 11 checks, with database readiness still failing.
+- Read-only inspection confirmed the intended Neon `student-vault-test` branch, the pre-migration table layout, no Prisma migration history, and zero users, topics, and resources. The branch currently expires on November 10, 2026. The guarded Prisma baseline comparison and migration require the secure demo connection configuration. Signed-in cloud flows and live AI still require credential-backed verification.
 
 ## Clerk integration continuation — 2026-11-04
 
