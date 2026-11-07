@@ -3,6 +3,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../hooks/useAuth';
+import { StudyAtmosphere } from '../components/StudyAtmosphere';
+import '../styles/welcome.css';
 
 const tools = [
   { icon: CalendarCheck, title: 'Attendance calculator', description: 'Record classes and track your attendance against your target.', path: '/attendance' },
@@ -33,7 +35,7 @@ export function WelcomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-surface text-ink">
+    <main className="sv-welcome min-h-screen bg-surface text-ink">
       <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <span className="inline-flex items-center gap-2 font-extrabold tracking-wide">
@@ -41,11 +43,12 @@ export function WelcomePage() {
           </span>
           <Button variant="outline" disabled={isLoading} onClick={() => void openAccount(false)}>Sign in</Button>
         </header>
-        <section className="py-12 sm:py-16">
+        <section className="sv-welcome-hero">
+          <div className="sv-welcome-copy">
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-teal-700">For school and college students</p>
-          <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight sm:text-6xl">Your everyday study workspace</h1>
+          <h1>Big ideas.<br />Small steps.<br /><em>Your space.</em></h1>
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
-            Keep track of classes, store your notes, and find help when a topic leaves you with a question.
+            Your everyday study workspace. Keep track of classes, collect your notes, and turn “I don’t get it” into your next breakthrough.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button size="lg" disabled={isLoading} onClick={() => openWorkspace('/dashboard')}>Continue as guest</Button>
@@ -53,17 +56,22 @@ export function WelcomePage() {
           </div>
           <p className="mt-3 text-sm text-ink-muted">Guest notes and attendance stay in this browser.</p>
           {(error || authError) && <p className="mt-3 text-sm text-ink-muted" role="alert">{error || authError}</p>}
+          </div>
+          <StudyAtmosphere />
         </section>
+        <div className="sv-tools-heading"><h2>Everything for your next study session.</h2><span>Pick a tool. Make a start.</span></div>
         <section aria-label="Student tools" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {tools.map(({ icon: Icon, title, description, path }) => (
+          {tools.map(({ icon: Icon, title, description, path }, index) => (
             <button key={path} type="button" disabled={isLoading} onClick={() => openWorkspace(path)}
-              className="rounded-2xl border border-border bg-white p-5 text-left transition-colors hover:border-teal-600 focus-visible:outline-2 focus-visible:outline-teal-600">
+              className="sv-study-tool rounded-2xl border border-border bg-white p-5 text-left focus-visible:outline-2 focus-visible:outline-teal-600">
+              <span className="sv-tool-number" aria-hidden="true">0{index + 1} ↗</span>
               <Icon className="mb-3 h-6 w-6 text-teal-700" aria-hidden="true" />
               <span className="block font-bold">{title}</span>
               <span className="mt-2 block text-sm leading-relaxed text-ink-muted">{description}</span>
             </button>
           ))}
         </section>
+        <footer className="sv-welcome-footer"><span>Made for the way you learn.</span><span>School · College · Your own pace</span></footer>
       </div>
     </main>
   );

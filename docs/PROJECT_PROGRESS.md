@@ -162,3 +162,11 @@ Protected feature pages now load as separate chunks, with loading and error reco
 Branch `main`, HEAD `3ebb34d`; Phase 1 `6cda058` and Phase 2 `3ebb34d` remain intact. Existing work is preserved. Changes remain uncommitted because the current working set contains inseparable pre-existing Phase 3–7 implementation. No push, reset or force operation was performed.
 
 Final change inventory: 71 short-status entries (29 modified, 42 untracked entries, including directories). `git diff --check` passed. No generated outputs/environment files appeared in the change inventory; the credential-pattern scan found no matches.
+
+## Design integration checkpoint — 2026-11-07
+
+- Added a student-facing welcome layout with React Three Fiber and ShaderGradient, a teal/peach animated visual, responsive tool cards, and subtle hover transitions.
+- The optional graphics load lazily, stop when offscreen or the page is hidden, respect reduced motion, and have a pause control and static CSS fallback. The graphics bundle is excluded from core PWA precaching. Three.js is pinned to 0.169.0 for ShaderGradient shader compatibility.
+- Verification: frontend tests passed 241/241 across 35 files; frontend production build (including TypeScript) and lint passed, with existing warnings. Online production dependency audit reported zero vulnerabilities. The optional graphics chunk is approximately 1.09 MB uncompressed / 272 KB gzip; core PWA precache is approximately 1.06 MB.
+- Browser verification on localhost: animated canvas rendered, pause removed the canvas, 390px mobile viewport had no horizontal overflow, and the Attendance shortcut navigated correctly.
+- This checkpoint does not establish live Clerk, AI/OCR, or remote database readiness. Secure demo database configuration and live external-provider verification remain outstanding. Existing demo-video assets were preserved separately from this UI change.

@@ -10,6 +10,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['assets/icon-192.svg', 'assets/icon-512.svg'],
+      workbox: {
+        // Optional decoration can fall back to CSS offline without delaying app caching.
+        globIgnores: ['**/StudyGradient-*.js'],
+      },
       manifest: {
         name: 'STUDENT VALUT',
         short_name: 'STUDENT VALUT',
