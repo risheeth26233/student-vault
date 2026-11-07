@@ -8,6 +8,7 @@ const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png",
   ".ico": "image/x-icon", ".json": "application/json", ".webmanifest": "application/manifest+json",
   ".woff2": "font/woff2", ".webp": "image/webp", ".jpg": "image/jpeg",
+  ".mp4": "video/mp4", ".vtt": "text/vtt; charset=utf-8",
 };
 
 /** Only the explicitly selected compiled frontend directory is public. */
@@ -37,6 +38,25 @@ export async function registerFrontend(app: FastifyInstance, directory: string):
     reply.type(type).header("Cache-Control", relative.startsWith("assets/") && /-[\w-]{8,}\./.test(relative)
       ? "public, max-age=31536000, immutable" : "no-cache");
     reply.header("X-Content-Type-Options", "nosniff");
+    if (extension === ".mp4") {
+      const size = info!.size;
+      reply.header("Accept-Ranges", "bytes");
+      if (request.headers.range) {
+        const match = /^bytes=(\d*)-(\d*)$/.exec(request.headers.range);
+        let start = 0;
+        let end = size - 1;
+        if (match?.[1]) {
+          start = Number(match[1]);
+          if (match[2]) end = Math.min(Number(match[2]), size - 1);
+        } else if (match?.[2]) start = Math.max(0, size - Number(match[2]));
+        if (!match || (!match[1] && !match[2]) || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end || start >= size) {
+          return reply.code(416).header("Content-Range", `bytes */${size}`).send();
+        }
+        return reply.code(206).header("Content-Range", `bytes ${start}-${end}/${size}`)
+          .header("Content-Length", end - start + 1).send(createReadStream(file, { start, end }));
+      }
+      reply.header("Content-Length", size);
+    }
     return reply.send(createReadStream(file));
   });
 }

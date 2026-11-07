@@ -16,6 +16,9 @@ test("release serves modern SPA publicly while APIs and private files remain pro
     await writeFile(join(root, "assets", "index-12345678.js"), "export {};");
     await writeFile(join(root, ".env"), "secret");
     await writeFile(join(root, "bundle.js.map"), "private source");
+    await mkdir(join(root, "demo"));
+    await writeFile(join(root, "demo", "demo.mp4"), "0123456789");
+    await writeFile(join(root, "demo", "demo.vtt"), "WEBVTT\n\n");
     await registerFrontend(app, root);
     await clerkAuthPlugin(app);
     app.get("/api/topics", async () => ({ topics: [] }));
@@ -29,6 +32,20 @@ test("release serves modern SPA publicly while APIs and private files remain pro
     const asset = await app.inject("/app/assets/index-12345678.js");
     assert.equal(asset.statusCode, 200);
     assert.match(String(asset.headers["cache-control"]), /immutable/);
+    const video = await app.inject("/app/demo/demo.mp4");
+    assert.equal(video.statusCode, 200);
+    assert.equal(video.headers["content-type"], "video/mp4");
+    assert.equal(video.headers["content-length"], "10");
+    for (const [range, body, contentRange] of [["bytes=2-5", "2345", "bytes 2-5/10"], ["bytes=-3", "789", "bytes 7-9/10"], ["bytes=8-", "89", "bytes 8-9/10"]]) {
+      const response = await app.inject({ url: "/app/demo/demo.mp4", headers: { range } });
+      assert.equal(response.statusCode, 206);
+      assert.equal(response.body, body);
+      assert.equal(response.headers["content-range"], contentRange);
+    }
+    for (const range of ["bytes=100-", "bytes=5-2", "bytes=-0", "bytes=-", "bytes=0-2,4-5"]) {
+      assert.equal((await app.inject({ url: "/app/demo/demo.mp4", headers: { range } })).statusCode, 416);
+    }
+    assert.match(String((await app.inject("/app/demo/demo.vtt")).headers["content-type"]), /text\/vtt/);
     for (const path of ["/app/.env", "/app/%2eenv", "/app/bundle.js.map", "/app/assets/missing.js", "/app/..%5c.env"]) {
       assert.equal((await app.inject(path)).statusCode, 404, path);
     }
