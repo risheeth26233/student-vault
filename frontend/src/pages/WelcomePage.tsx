@@ -55,6 +55,7 @@ export function WelcomePage() {
             <Button size="lg" variant="ghost" disabled={isLoading} onClick={() => void openAccount(true)}>Create a student account</Button>
           </div>
           <p className="mt-3 text-sm text-ink-muted">Guest notes and attendance stay in this browser.</p>
+          <a href="#demo" className="mt-4 inline-block font-semibold text-teal-700 underline underline-offset-4">Watch the demo</a>
           {(error || authError) && <p className="mt-3 text-sm text-ink-muted" role="alert">{error || authError}</p>}
           </div>
           <StudyAtmosphere />
@@ -70,6 +71,18 @@ export function WelcomePage() {
               <span className="mt-2 block text-sm leading-relaxed text-ink-muted">{description}</span>
             </button>
           ))}
+        </section>
+        <section id="demo" aria-label="Student Valut demo" className="mt-10 rounded-2xl border border-border p-5">
+          <details>
+            <summary className="cursor-pointer text-lg font-semibold">Watch the student demo · 3 min 56 sec</summary>
+            <p className="my-3 text-sm text-ink-muted">Follow Maya through attendance, creating notes, and finding study help. Includes narration, calm music, and captions. Online video and AI tools require configured services.</p>
+            <video controls preload="none" playsInline className="w-full rounded-xl" aria-label="Student Valut narrated walkthrough">
+              <source src={`${import.meta.env.BASE_URL}demo/student-valut-demo.mp4`} type="video/mp4" />
+              <track kind="captions" src={`${import.meta.env.BASE_URL}demo/student-valut-demo.vtt`} srcLang="en" label="English (also shown in video)" />
+              Your browser does not support video playback. Use the download link below.
+            </video>
+          </details>
+          <a href={`${import.meta.env.BASE_URL}demo/student-valut-demo.mp4`} download="STUDENT-VALUT-demo.mp4" className="mt-4 inline-block font-semibold text-teal-700 underline underline-offset-4">Download demo video (MP4 · 8 MB)</a>
         </section>
         <footer className="sv-welcome-footer"><span>Made for the way you learn.</span><span>School · College · Your own pace</span></footer>
       </div>

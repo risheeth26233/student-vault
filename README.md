@@ -6,6 +6,10 @@ An everyday study workspace for school and college students. Track attendance, k
 
 ### [Open the public preview](https://student-vault-467y.onrender.com/app/)
 
+[Watch the student demo](https://student-vault-467y.onrender.com/app/#demo) · [Download the narrated MP4](https://raw.githubusercontent.com/risheeth26233/student-vault/main/frontend/public/demo/student-valut-demo.mp4)
+
+The 3-minute 56-second walkthrough includes a detailed notes tutorial, female narration, calm music, and English captions. It uses fictional local sample data and labels features that require online-service configuration.
+
 **Release status: deployed, partially verified.** The real React app and API are hosted together on Render's free plan. HTTPS page/assets, deep links, health and anonymous access denials passed. Local guest tools are available; Clerk configuration, demo-database migration and signed-in student/teacher verification are pending. Database readiness currently fails until secure configuration is completed. This is not a production-ready release.
 
 ![Actual student workspace in an isolated local guest session](docs/screenshots/workspace-desktop.png)

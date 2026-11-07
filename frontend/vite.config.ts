@@ -12,7 +12,7 @@ export default defineConfig({
       includeAssets: ['assets/icon-192.svg', 'assets/icon-512.svg'],
       workbox: {
         // Optional decoration can fall back to CSS offline without delaying app caching.
-        globIgnores: ['**/StudyGradient-*.js'],
+        globIgnores: ['**/StudyGradient-*.js', '**/demo/**'],
       },
       manifest: {
         name: 'STUDENT VALUT',

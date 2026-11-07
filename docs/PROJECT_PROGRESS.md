@@ -170,3 +170,9 @@ Final change inventory: 71 short-status entries (29 modified, 42 untracked entri
 - Verification: frontend tests passed 241/241 across 35 files; frontend production build (including TypeScript) and lint passed, with existing warnings. Online production dependency audit reported zero vulnerabilities. The optional graphics chunk is approximately 1.09 MB uncompressed / 272 KB gzip; core PWA precache is approximately 1.06 MB.
 - Browser verification on localhost: animated canvas rendered, pause removed the canvas, 390px mobile viewport had no horizontal overflow, and the Attendance shortcut navigated correctly.
 - This checkpoint does not establish live Clerk, AI/OCR, or remote database readiness. Secure demo database configuration and live external-provider verification remain outstanding. Existing demo-video assets were preserved separately from this UI change.
+
+## Demo publishing checkpoint — 2026-11-07
+
+- Published the enhanced 3:56 student walkthrough as a public frontend MP4 with English WebVTT captions. Added a native expandable player and same-origin download link to the welcome page, plus README links.
+- Playback uses preload=none, no autoplay, and the demo directory is excluded from PWA precaching. The existing burned-in captions remain visible; the optional browser caption track is off initially to avoid duplicate subtitles.
+- Frontend build (TypeScript included), lint and git diff --check passed. Browser verified the expandable controls and download URL. Public deployment verification follows the push.
