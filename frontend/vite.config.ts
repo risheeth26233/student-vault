@@ -8,7 +8,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['assets/icon-192.svg', 'assets/icon-512.svg'],
       workbox: {
         // Optional decoration can fall back to CSS offline without delaying app caching.

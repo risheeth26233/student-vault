@@ -109,7 +109,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto" aria-label="Main navigation">
+        <nav className="flex-1 min-h-0 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden" aria-label="Main navigation">
           {navItems.filter(item => item.id !== 'teacher' || Boolean(user)).map(item => {
             const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
             const Icon = item.icon;
@@ -130,7 +130,7 @@ export function Sidebar() {
                 </span>
                 <span className="sidebar-nav-item-label">{item.label}</span>
                 {isActive && <span className="nav-indicator" aria-hidden="true" />}
-                {!collapsed && (
+                {collapsed && (
                   <span className="sidebar-tooltip">{item.label}</span>
                 )}
               </button>

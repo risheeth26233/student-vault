@@ -1,5 +1,6 @@
 // Student Vault API Client
 // TypeScript port of the existing api.js with React integration
+import { loadProfile } from './storage';
 
 // Clerk type declarations
 interface ClerkSession {
@@ -57,6 +58,10 @@ async function getSessionToken(): Promise<string | null> {
  * Make an authenticated API request
  */
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  // Guest records are local: do not wait for a cloud round trip before using the local stores.
+  if (typeof window !== 'undefined' && !window.Clerk?.user && loadProfile()?.guest && /^\/(topics|attendance|resources|assignments|assessments)(\/|\?|$)/.test(endpoint)) {
+    throw Object.assign(new Error('Guest workspace uses local records'), { status: 401, code: 'guest_local' });
+  }
   const token = await getSessionToken();
   
   const headers: HeadersInit = {
@@ -71,6 +76,7 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
+    signal: options.signal ?? AbortSignal.timeout(15000),
   });
   
   const data = await response.json().catch(() => ({}));

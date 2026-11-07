@@ -15,11 +15,12 @@ import { PageContainer, Section, ContentWrapper } from '../components/layout/App
 import { 
   BookOpen, Calendar, FileText, Target, TrendingUp, 
   AlertTriangle, Clock, CheckCircle, ArrowRight,
-  LayoutDashboard, Plus, ClipboardList
+  LayoutDashboard, Plus, ClipboardList, NotebookPen, Video, Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, isBefore, addDays } from 'date-fns';
 import { useMemo } from 'react';
+import '../styles/dashboard.css';
 
 export function DashboardPage() {
   const { isAuthenticated, isLoading, profile } = useAuth();
@@ -97,24 +98,7 @@ export function DashboardPage() {
     };
   }, [topics, resources, attendance, assignmentsData, assessmentsData]);
 
-  if (overallLoading) {
-    return (
-      <PageContainer>
-        <ContentWrapper>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map(i => (
-              <Card key={i} elevation={1} padding="lg" className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                <div className="h-8 bg-gray-200 rounded w-1/2" />
-              </Card>
-            ))}
-          </div>
-        </ContentWrapper>
-      </PageContainer>
-    );
-  }
-
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isLoading && !profile?.guest) {
     return (
       <PageContainer>
         <ContentWrapper className="max-w-4xl">
@@ -145,23 +129,29 @@ export function DashboardPage() {
   return (
     <PageContainer>
       <ContentWrapper className="sv-dashboard max-w-6xl space-y-6">
-        <header className="page-header">
-          <h1 className="text-3xl font-extrabold text-ink">Dashboard</h1>
-          <p className="text-ink-muted">Your study overview for today</p>
+        <header className="sv-dashboard-heading">
+          <div><p className="sv-dashboard-kicker">YOUR STUDY SPACE</p><h1>Let’s make a little progress.</h1></div>
+          <span>{format(new Date(), 'EEEE, d MMMM')}</span>
         </header>
-
-        <section className="sv-focus-panel" aria-label="Today's study focus">
-          <div>
-            <p className="sv-eyebrow">Your learning workspace</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">Make room for a little progress{profile?.name && !profile.guest ? `, ${profile.name.split(' ')[0]}` : ''}.</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed">{stats.openAssignments[0] ? `Next up: ${stats.openAssignments[0].title}. Review your upcoming work, then focus on one topic.` : stats.totalTopics ? 'Choose a topic, revisit your notes, and check your understanding with a short practice session.' : 'Start with one subject and one topic. Your study overview will grow from the work you record.'}</p>
+        <section className="sv-dashboard-hero" aria-label="Today's study focus">
+          <div className="sv-dashboard-hero-copy">
+            <span className="sv-dashboard-chip">{profile?.guest ? 'Guest workspace · saved on this device' : 'Your personal workspace'}</span>
+            <h2>One topic.<br />One step forward.</h2>
+            <p>{stats.openAssignments[0] ? `Next up: ${stats.openAssignments[0].title}. Make some time for what’s due next.` : stats.totalTopics ? 'Your notes are here. Pick up a topic and give your next question a little attention.' : 'A fresh page, a new idea. Add your first topic and start building a space that works for you.'}</p>
+            <Link className="sv-dashboard-primary" to={stats.totalTopics ? '/study' : '/notes'}>{stats.totalTopics ? 'Start a study session' : 'Create your first note'}<ArrowRight size={18} aria-hidden="true" /></Link>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link to={stats.totalTopics ? '/study' : '/vault'}><Button>{stats.totalTopics ? 'Start a study session' : 'Add your first topic'}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button></Link>
-            <Link to="/notes"><Button variant="outline">Open notes</Button></Link>
-          </div>
+          <div className="sv-dashboard-art" aria-hidden="true"><div className="sv-dashboard-orbit" /><div className="sv-dashboard-book"><BookOpen size={64} strokeWidth={1.3} /><span>Room to grow.</span></div><span className="sv-dashboard-spark"><Sparkles size={26} /></span></div>
         </section>
-
+        <section aria-label="Everyday study tools" className="sv-dashboard-tools">
+          {[
+            {to:'/notes',icon:NotebookPen,title:'Your notes',detail:'Capture a thought. Keep it close.',tone:'mint'},
+            {to:'/attendance',icon:Target,title:'Attendance',detail:'Know where you stand.',tone:'peach'},
+            {to:'/youtube',icon:Video,title:'Find a video',detail:'See it explained another way.',tone:'lavender'},
+            {to:'/ai',icon:Sparkles,title:'Ask a question',detail:'Get help with a tricky topic.',tone:'blue'},
+          ].map(({to,icon:Icon,title,detail,tone})=><Link key={to} to={to} className={`sv-dashboard-tool sv-tool-${tone}`}><span className="sv-dashboard-tool-icon"><Icon size={23} aria-hidden="true" /></span><ArrowRight className="sv-dashboard-tool-arrow" size={18} aria-hidden="true" /><h3>{title}</h3><p>{detail}</p></Link>)}
+        </section>
+        {overallLoading && <p role="status" className="sv-dashboard-status">Loading your study records. You can use the tools above while we get them ready.</p>}
+        <div className="sv-dashboard-section-heading"><h2>Your study snapshot</h2><span>Based on the records you’ve added</span></div>
         {/* Stats Grid */}
         <Section>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -169,7 +159,7 @@ export function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-ink-muted mb-1">Total Topics</p>
-                  <p className="text-3xl font-extrabold text-ink">{stats.totalTopics}</p>
+                  <p className="text-3xl font-extrabold text-ink">{topicsLoading ? '—' : stats.totalTopics}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
                   <BookOpen className="w-6 h-6 text-teal-600" />
@@ -195,7 +185,7 @@ export function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-ink-muted mb-1">Resources</p>
-                  <p className="text-3xl font-extrabold text-ink">{stats.totalResources}</p>
+                  <p className="text-3xl font-extrabold text-ink">{resourcesLoading ? '—' : stats.totalResources}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
                   <FileText className="w-6 h-6 text-blue-600" />
@@ -208,7 +198,7 @@ export function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-ink-muted mb-1">Attendance</p>
-                  <p className="text-3xl font-extrabold text-ink">{attendance.overallPercentage}</p>
+                  <p className="text-3xl font-extrabold text-ink">{attendanceLoading ? '—' : attendance.overallPercentage}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
                   <Target className="w-6 h-6 text-amber-600" />
@@ -230,7 +220,7 @@ export function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-ink-muted mb-1">Subjects Tracked</p>
-                  <p className="text-3xl font-extrabold text-ink">{attendance.subjectsTracked}</p>
+                  <p className="text-3xl font-extrabold text-ink">{attendanceLoading ? '—' : attendance.subjectsTracked}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-purple-600" />
@@ -477,83 +467,7 @@ export function DashboardPage() {
             )}
           </Section>
 
-          {/* Quick Actions */}
-          <Section title="Quick Actions" className="lg:col-span-2">
-            <div className="sv-quick-actions grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <Link to="/vault" className="group">
-                <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-teal-100 transition-colors">
-                    <Plus className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <h3 className="font-semibold text-ink mb-1">Add Topic</h3>
-                  <p className="text-sm text-ink-muted">Create a new study topic</p>
-                </Card>
-              </Link>
-              <Link to="/attendance" className="group">
-                <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-amber-100 transition-colors">
-                    <Target className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <h3 className="font-semibold text-ink mb-1">Mark Attendance</h3>
-                  <p className="text-sm text-ink-muted">Record present/absent</p>
-                </Card>
-              </Link>
-              <Link to="/youtube" className="group">
-                <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-red-100 transition-colors">
-                    <FileText className="w-6 h-6 text-red-600" />
-                  </div>
-                  <h3 className="font-semibold text-ink mb-1">Find Videos</h3>
-                  <p className="text-sm text-ink-muted">Search YouTube</p>
-                </Card>
-              </Link>
-              <Link to="/search" className="group">
-                <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 transition-colors">
-                    <LayoutDashboard className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <h3 className="font-semibold text-ink mb-1">Web Search</h3>
-                  <p className="text-sm text-ink-muted">Find resources</p>
-                </Card>
-              </Link>
-              <Link to="/ai" className="group">
-                <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-100 transition-colors">
-                    <TrendingUp className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <h3 className="font-semibold text-ink mb-1">AI Assistant</h3>
-                  <p className="text-sm text-ink-muted">Ask questions</p>
-                </Card>
-              </Link>
-              <Link to="/assignments" className="group">
-                <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-teal-100 transition-colors">
-                    <ClipboardList className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <h3 className="font-semibold text-ink mb-1">Add Assignment</h3>
-                  <p className="text-sm text-ink-muted">Track a new deadline</p>
-                </Card>
-              </Link>
-              <Link to="/performance" className="group">
-                <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-teal-100 transition-colors">
-                    <TrendingUp className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <h3 className="font-semibold text-ink mb-1">Log Result</h3>
-                  <p className="text-sm text-ink-muted">Record a quiz or exam score</p>
-                </Card>
-              </Link>
-              <Link to="/images" className="group">
-                <Card elevation={1} padding="lg" className="h-full text-center group-hover:border-teal-300 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-pink-100 transition-colors">
-                    <FileText className="w-6 h-6 text-pink-600" />
-                  </div>
-                  <h3 className="font-semibold text-ink mb-1">Generate Images</h3>
-                  <p className="text-sm text-ink-muted">Create diagrams</p>
-                </Card>
-              </Link>
-            </div>
-          </Section>
+
         </div>
       </ContentWrapper>
     </PageContainer>

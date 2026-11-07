@@ -3,6 +3,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { AppUpdateNotice } from './components/AppUpdateNotice';
 import './styles/globals.css';
 
 // Create root and render
@@ -16,5 +17,6 @@ const root = createRoot(rootElement);
 root.render(
   <StrictMode>
     <App />
+    <AppUpdateNotice />
   </StrictMode>
 );

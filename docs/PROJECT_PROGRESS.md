@@ -177,3 +177,12 @@ Final change inventory: 71 short-status entries (29 modified, 42 untracked entri
 - Playback uses preload=none, no autoplay, and the demo directory is excluded from PWA precaching. The existing burned-in captions remain visible; the optional browser caption track is off initially to avoid duplicate subtitles.
 - Frontend build (TypeScript included), lint and git diff --check passed. Browser verified the expandable controls and download URL. Public deployment verification follows the push.
 - Follow-up release check found the compiled-file whitelist blocked MP4/WebVTT. Added those MIME types and single-range video responses (including suffix/open-ended requests and invalid-range 416 responses). The focused backend route regression test passed; private-file rejection remains covered.
+
+## Dashboard usability refresh — 2026-11-07
+
+- Reworked the dashboard around a focus panel, four everyday study shortcuts, a clearly labelled record snapshot, and existing exams/activity/assignment/performance sections. Added a lightweight CSS book illustration, gentle entrance/hover motion, responsive layouts and reduced-motion support. No synthetic progress numbers were added.
+- A pending records request no longer hides the dashboard or its navigation. Guest CRUD records use the established local-store fallback immediately instead of waiting for a cloud round trip; ordinary API fetches have a 15-second bound. Signed-in identities and server authorization are unchanged.
+- Replaced delayed injected PWA registration with immediate registration and an explicit save-then-reload update notice. This helps future updates reach existing browsers without automatically interrupting edits; clients on an old worker may still need an initial refresh.
+- Fixed sidebar horizontal overflow caused by off-canvas tooltips in expanded navigation. Kept the original mobile navigation items.
+- Verified desktop, 390px mobile (no horizontal overflow), dark mode and Notes shortcut in the browser. Added regression tests for usable dashboard actions during resource loading and guest requests avoiding cloud access. Frontend build and lint passed with existing warnings. Preview screenshot uses fictional local records.
+- Test results: full frontend run passed 242 tests in 36 files; a separate focused run passed both new regression tests (the dashboard test was added after the full run began). git diff --check passed.
