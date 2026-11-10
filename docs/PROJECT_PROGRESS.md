@@ -186,3 +186,8 @@ Final change inventory: 71 short-status entries (29 modified, 42 untracked entri
 - Fixed sidebar horizontal overflow caused by off-canvas tooltips in expanded navigation. Kept the original mobile navigation items.
 - Verified desktop, 390px mobile (no horizontal overflow), dark mode and Notes shortcut in the browser. Added regression tests for usable dashboard actions during resource loading and guest requests avoiding cloud access. Frontend build and lint passed with existing warnings. Preview screenshot uses fictional local records.
 - Test results: full frontend run passed 242 tests in 36 files; a separate focused run passed both new regression tests (the dashboard test was added after the full run began). git diff --check passed.
+
+## Interaction polish and release check — 2026-11-10
+
+- Added consistent press feedback to shared buttons, dashboard and welcome shortcuts, and desktop/mobile navigation. Reduced-motion mode retains an inset press outline without scaling or hover movement on dashboard cards.
+- Live smoke checks passed 10 of 11. Database readiness remains the failing check. Neon confirmed `student-vault-test` is non-default and scheduled to expire November 10 at 17:29 UTC. The ignored demo database configuration is still absent. Live signed-in workflows and AI/OCR remain pending secure configuration and verification.

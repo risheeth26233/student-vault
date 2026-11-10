@@ -15,7 +15,7 @@
 .sv-tools-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 1.2rem; }
 .sv-tools-heading h2 { font-size: 1.35rem; font-weight: 650; letter-spacing: -.025em; }
 .sv-tools-heading > span { color: var(--color-ink-muted); font-size: .85rem; }
-.sv-study-tool { position: relative; min-height: 220px; transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease; }
+.sv-study-tool { position: relative; min-height: 220px; transition: transform 220ms ease, scale 180ms ease, box-shadow 220ms ease, border-color 220ms ease; }
 .sv-tool-number { display: block; text-align: right; color: var(--color-ink-muted); font-size: .75rem; margin-bottom: .8rem; }
 .sv-study-tool:hover { transform: translateY(-5px); border-color: var(--color-teal-600); box-shadow: 0 14px 30px -20px #285b4c60; }
 .sv-study-tool:active { transform: translateY(-1px); }

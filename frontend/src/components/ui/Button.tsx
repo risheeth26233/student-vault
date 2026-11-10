@@ -9,8 +9,7 @@ import { cn } from '../../lib/utils';
 const buttonVariants = cva(
   'sv-button inline-flex items-center justify-center rounded-lg font-semibold ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ' +
-  'disabled:opacity-50 disabled:pointer-events-none ' +
-  'motion-safe:active:scale-[0.98]',
+  'disabled:opacity-50 disabled:pointer-events-none',
   {
     variants: {
       variant: {
