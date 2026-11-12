@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
   providers: vi.fn(),
@@ -24,11 +25,15 @@ import { AIPage } from '../AIPage';
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 beforeEach(() => { mocks.topics = []; mocks.resources = []; });
 
+function renderPage() {
+  return render(<MemoryRouter><AIPage /></MemoryRouter>);
+}
+
 describe('AIPage', () => {
   it('shows configured providers and sends only entered conversation messages', async () => {
     mocks.providers.mockResolvedValue({ providers: ['openai'], default: 'openai' });
     mocks.chat.mockResolvedValue({ content: 'Try a small example first.' });
-    render(<AIPage />);
+    renderPage();
     await screen.findByText('Available providers: openai');
     fireEvent.change(screen.getByLabelText('Your study question'), { target: { value: 'Explain recursion' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send question' }));
@@ -56,7 +61,7 @@ describe('AIPage', () => {
     vi.stubGlobal('SpeechSynthesisUtterance', MockUtterance);
     mocks.providers.mockResolvedValue({ providers: ['openai'], default: 'openai' });
     mocks.chat.mockResolvedValue({ content: 'Let’s take it one step at a time.' });
-    render(<AIPage />);
+    renderPage();
     await screen.findByText('Available providers: openai');
     fireEvent.change(screen.getByLabelText('Your study question'), { target: { value: 'Help me understand this' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send question' }));
@@ -73,7 +78,7 @@ describe('AIPage', () => {
     mocks.saveNotes.mockResolvedValue({});
     mocks.providers.mockResolvedValue({ providers: ['openai'] });
     mocks.chat.mockResolvedValue({ content: 'Use a common denominator.' });
-    render(<AIPage />);
+    renderPage();
     await screen.findByText('Available providers: openai');
     fireEvent.change(screen.getByLabelText('Study topic'), { target: { value: 'topic-1' } });
     fireEvent.change(screen.getByLabelText('Your study question'), { target: { value: 'How do I add fractions?' } });
@@ -86,10 +91,24 @@ describe('AIPage', () => {
     });
   });
 
+  it('offers video references for the current doubt and selected topic', async () => {
+    mocks.topics = [{ id: 'topic-1', subject: 'Math', title: 'Fractions', notes: '' }];
+    mocks.providers.mockResolvedValue({ providers: ['openai'] });
+    mocks.chat.mockResolvedValue({ content: 'Use a common denominator.' });
+    renderPage();
+    await screen.findByText('Available providers: openai');
+    fireEvent.change(screen.getByLabelText('Study topic'), { target: { value: 'topic-1' } });
+    fireEvent.change(screen.getByLabelText('Your study question'), { target: { value: 'Why use a common denominator?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send question' }));
+    await screen.findByText('Use a common denominator.');
+    const link = screen.getByRole('link', { name: 'Find related videos' });
+    expect(new URL((link as HTMLAnchorElement).href).searchParams.get('query')).toBe('Math Fractions Why use a common denominator?');
+  });
+
   it('handles provider outage and keeps the typed question available for retry', async () => {
     mocks.providers.mockRejectedValue(new Error('Provider service unavailable'));
     mocks.chat.mockRejectedValue(new Error('Request timed out'));
-    render(<AIPage />);
+    renderPage();
     await screen.findByText('Provider availability could not be checked.');
     const input = screen.getByLabelText('Your study question');
     fireEvent.change(input, { target: { value: 'Help me review vectors' } });
@@ -100,7 +119,7 @@ describe('AIPage', () => {
 
   it('explains the unconfigured-provider state', async () => {
     mocks.providers.mockResolvedValue({ providers: [], default: null });
-    render(<AIPage />);
+    renderPage();
     expect((await screen.findByRole('status')).textContent).toMatch(/no AI chat provider is configured/i);
     expect((screen.getByRole('button', { name: 'Send question' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText('Your study question'), { target: { value: 'Help me make a revision plan' } });
@@ -115,7 +134,7 @@ describe('AIPage', () => {
     mocks.topics = [{ id: 'topic-1', subject: 'Biology', title: 'Photosynthesis', notes: '' }];
     mocks.resources = [{ id: 'res-1', topicId: 'topic-1', name: 'Biology.pdf', mimeType: 'application/pdf', downloadUrl: null, data: 'data:application/pdf;base64,JVBERi0=' }];
     mocks.study.mockResolvedValue({ mode: 'local_excerpts', answer: 'Local document excerpts', sources: [{ resourceId: 'res-1', title: 'Biology.pdf', page: 2, text: 'Chlorophyll absorbs light.' }], sourceErrors: [], extractionProviders: [], provider: null, providerAttempted: false, notice: 'The excerpts stayed local.' });
-    render(<AIPage />);
+    renderPage();
     await screen.findByText('Available providers: openai');
     fireEvent.change(screen.getByLabelText('Study topic'), { target: { value: 'topic-1' } });
     fireEvent.click(screen.getByRole('checkbox', { name: /Biology\.pdf/ }));
@@ -132,7 +151,7 @@ describe('AIPage', () => {
     mocks.topics = [{ id: 'topic-1', subject: 'Biology', title: 'Photosynthesis', notes: '' }];
     mocks.resources = [{ id: 'res-1', topicId: 'topic-1', name: 'Biology.pdf', mimeType: 'application/pdf', downloadUrl: null, data: 'data:application/pdf;base64,JVBERi0=' }];
     mocks.study.mockResolvedValue({ mode: 'provider_grounded', answer: 'From your documents: chlorophyll absorbs light.', sources: [{ resourceId: 'res-1', title: 'Biology.pdf', page: 2, text: 'Chlorophyll absorbs light.' }], sourceErrors: [], extractionProviders: [], provider: 'openai', providerAttempted: true, notice: 'Retrieved excerpts were sent to openai.' });
-    render(<AIPage />);
+    renderPage();
     await screen.findByText('Available providers: openai');
     fireEvent.change(screen.getByLabelText('Study topic'), { target: { value: 'topic-1' } });
     fireEvent.click(screen.getByRole('checkbox', { name: /Biology\.pdf/ }));

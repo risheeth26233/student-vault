@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MessageSquare, Send, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { MessageSquare, Send, Sparkles, Video } from 'lucide-react';
 import { PageContainer, ContentWrapper } from '../components/layout/AppLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -14,6 +15,11 @@ import { createSystemPrompt } from '../hooks/useAI';
 type Turn = { role: 'user' | 'assistant'; content: string; study?: AIStudyResponse; offline?: boolean };
 const MAX_SELECTED_DOCUMENTS = 4;
 const VOICE_PREFERENCE_KEY = 'sv_ai_read_aloud_voice';
+
+function relatedVideosUrl(subject: string | undefined, title: string | undefined, question: string): string {
+  const query = [subject, title, question].filter(Boolean).join(' ').slice(0, 500);
+  return `/youtube?query=${encodeURIComponent(query)}`;
+}
 
 export function AIPage() {
   const [prompt, setPrompt] = useState('');
@@ -184,6 +190,15 @@ export function AIPage() {
             <p className="mb-1 text-xs font-semibold opacity-75">{turn.role === 'user' ? 'You' : turn.offline ? 'Local review guide' : turn.study?.mode === 'provider_grounded' ? `AI answer · retrieved evidence sent to ${turn.study.provider}` : turn.study ? 'Retrieved excerpts · no AI answer' : 'AI study notes · review before relying'}</p>
             <p>{turn.content}</p>
             {turn.role === 'assistant' && !turn.offline && speechAvailable && <Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => readAnswer(index, turn.content)}>{readingTurn === index ? 'Stop reading' : 'Read aloud'}</Button>}
+            {turn.role === 'assistant' && turns[index - 1]?.role === 'user' && (
+              <Link
+                to={relatedVideosUrl(selectedTopic?.subject, selectedTopic?.title, turns[index - 1]?.content ?? '')}
+                className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-sm font-semibold text-teal-700 transition-colors hover:bg-teal-50 hover:text-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              >
+                <Video className="h-4 w-4" aria-hidden="true" />
+                Find related videos
+              </Link>
+            )}
             {turn.role === 'assistant' && !turn.offline && (!turn.study || turn.study.mode === 'provider_grounded') && selectedTopic && (
               <Button size="sm" variant="outline" className="mt-3"
                 disabled={saveTopicNotes.isPending || savedAnswers.includes(`${selectedTopic.id}:${index}`)}

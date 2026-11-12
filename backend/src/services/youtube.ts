@@ -68,22 +68,6 @@ export class YouTubeService {
 export const youtubeService = new YouTubeService();
 
 /**
- * Placeholder provider - used as fallback when no API key is configured
- */
-export class PlaceholderYouTubeProvider implements YouTubeProvider {
-  async search(_options: YouTubeSearchOptions): Promise<YouTubeSearchResponse> {
-    return {
-      videos: [],
-      totalResults: 0,
-    };
-  }
-
-  async getVideo(_id: string): Promise<YouTubeVideo | null> {
-    return null;
-  }
-}
-
-/**
  * YouTube Data API v3 Provider Implementation
  */
 export class YouTubeDataApiProvider implements YouTubeProvider {
@@ -197,8 +181,5 @@ export async function initializeYouTubeProvider(): Promise<void> {
   if (env.YOUTUBE_API_KEY) {
     const provider = new YouTubeDataApiProvider(env.YOUTUBE_API_KEY);
     youtubeService.setProvider(provider);
-  } else {
-    // Fallback to placeholder if no API key
-    youtubeService.setProvider(new PlaceholderYouTubeProvider());
   }
 }

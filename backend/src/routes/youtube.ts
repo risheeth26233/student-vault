@@ -4,7 +4,7 @@ import { youtubeService, type YouTubeSearchOptions } from "../services/youtube.j
 import { toJsonSchema } from "../utils/schema.js";
 
 const searchSchemaZod = z.object({
-  query: z.string().min(1).max(500),
+  query: z.string().min(1).max(500).regex(/\S/, "Search query must include a non-space character"),
   maxResults: z.number().min(1).max(50).optional().default(10),
   order: z.enum(["relevance", "date", "rating", "viewCount", "title"]).optional(),
   type: z.enum(["video", "channel", "playlist"]).optional().default("video"),

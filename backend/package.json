@@ -8,7 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx --test src/routes/frontend.test.ts src/routes/images.test.ts src/routes/readiness.test.ts src/routes/clerk-webhook.test.ts src/routes/ai.test.ts src/routes/ai-study.test.ts src/routes/handwriting.test.ts src/routes/teacher.test.ts src/routes/teacher.integration.test.ts src/routes/teacher.postgres.integration.test.ts src/services/ai.test.ts src/services/documentExtractor.test.ts src/services/documentStudy.test.ts src/services/interventionState.test.ts src/services/resourceValidation.test.ts src/utils/clerkWebhookSignature.test.ts src/plugins/request-limits.test.ts src/plugins/clerk-auth.test.ts",
+    "test": "tsx --test src/routes/frontend.test.ts src/routes/images.test.ts src/routes/readiness.test.ts src/routes/clerk-webhook.test.ts src/routes/ai.test.ts src/routes/ai-study.test.ts src/routes/handwriting.test.ts src/routes/youtube.test.ts src/routes/teacher.test.ts src/routes/teacher.integration.test.ts src/routes/teacher.postgres.integration.test.ts src/services/ai.test.ts src/services/documentExtractor.test.ts src/services/documentStudy.test.ts src/services/interventionState.test.ts src/services/resourceValidation.test.ts src/utils/clerkWebhookSignature.test.ts src/plugins/request-limits.test.ts src/plugins/clerk-auth.test.ts",
     "test:db": "tsx --test src/routes/teacher.postgres.integration.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",

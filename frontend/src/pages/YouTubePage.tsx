@@ -3,7 +3,8 @@
 // channel, view count, date and description, opening on youtube.com in a new tab.
 // Discovery only: results are never persisted, downloaded or re-categorised.
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CircleAlert, RefreshCw, Search } from 'lucide-react';
 import { PageContainer, Section, ContentWrapper } from '../components/layout/AppLayout';
 import { Card } from '../components/ui/Card';
@@ -37,7 +38,9 @@ function failureMessage(error: unknown): string {
 }
 
 export function YouTubePage() {
-  const [query, setQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const linkedQuery = searchParams.get('query')?.trim() ?? '';
+  const [query, setQuery] = useState(linkedQuery);
   const [maxResults, setMaxResults] = useState('10');
   const [order, setOrder] = useState('relevance');
 
@@ -46,6 +49,17 @@ export function YouTubePage() {
 
   const statusQuery = useYouTubeStatus();
   const search = useYouTubeSearch();
+  const { mutate: mutateSearch } = search;
+  const autoSubmittedQuery = useRef('');
+
+  useEffect(() => {
+    if (!linkedQuery || autoSubmittedQuery.current === linkedQuery) return;
+    autoSubmittedQuery.current = linkedQuery;
+    const options: YouTubeSearchOptions = { query: linkedQuery.slice(0, 500), maxResults: 10, order: 'relevance' };
+    setQuery(options.query);
+    setSubmitted(options);
+    mutateSearch(options);
+  }, [linkedQuery, mutateSearch]);
 
   const statusData = statusQuery.data as { configured?: boolean; enabled?: boolean } | undefined;
   const configured = statusData ? !!(statusData.configured ?? statusData.enabled) : false;
@@ -86,11 +100,11 @@ export function YouTubePage() {
       order: order as YouTubeSearchOptions['order'],
     };
     setSubmitted(options);
-    search.mutate(options);
+    mutateSearch(options);
   };
 
   const handleRetry = () => {
-    if (submitted) search.mutate(submitted);
+    if (submitted) mutateSearch(submitted);
   };
 
   const renderResults = () => {

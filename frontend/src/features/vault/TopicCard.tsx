@@ -1,6 +1,7 @@
 ﻿// Topic card — status, exam date, checklist progress and inline notes editing
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Textarea } from '../../components/ui/Input';
@@ -17,7 +18,7 @@ import { useToastHelpers } from '../../components/ui/Toast';
 import { useUpdateTopic, useUpdateTopicChecklist } from '../../hooks/useTopics';
 import { useNotesAutosave } from './useNotesAutosave';
 import { cn, formatDate } from '../../lib/utils';
-import { Calendar, Circle, CircleCheck, Pencil, Trash, EllipsisVertical, StickyNote, ChevronDown } from 'lucide-react';
+import { Calendar, Circle, CircleCheck, Pencil, Trash, EllipsisVertical, StickyNote, ChevronDown, Video } from 'lucide-react';
 import type { Topic } from '../../types/api';
 
 type TopicStatus = Topic['status'];
@@ -273,6 +274,15 @@ export function TopicCard({ topic, onEdit, onDelete, onSelectSubject }: TopicCar
           </p>
         )}
       </div>
+
+      <Link
+        to={`/youtube?query=${encodeURIComponent(`${topic.subject} ${topic.title}`)}`}
+        className="inline-flex min-h-10 items-center gap-2 rounded-lg text-sm font-semibold text-teal-700 transition-colors hover:text-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+        aria-label={`Find related videos for ${topic.subject}: ${topic.title}`}
+      >
+        <Video className="h-4 w-4" aria-hidden="true" />
+        Find related videos
+      </Link>
     </Card>
   );
 }
