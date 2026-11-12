@@ -26,6 +26,7 @@ test("provider receives retrieved passages with citation and untrusted-document 
   assert.equal(result.sources[0].resourceId, "res-bio");
   assert.match(JSON.stringify(providerMessages), /Chlorophyll absorbs light/);
   assert.match(JSON.stringify(providerMessages), /polite, patient personal study companion/i);
+  assert.match(JSON.stringify(providerMessages), /Student-Vault/);
   assert.match(JSON.stringify(providerMessages), /natural, respectful tone/i);
   assert.match(JSON.stringify(providerMessages), /untrusted data/);
   assert.match(result.answer, /Resource: Biology Notes.pdf, page 1/);

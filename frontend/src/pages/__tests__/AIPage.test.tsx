@@ -36,6 +36,7 @@ describe('AIPage', () => {
     expect(mocks.chat).toHaveBeenCalledWith(expect.objectContaining({ messages: expect.arrayContaining([expect.objectContaining({ role: 'user', content: 'Explain recursion' })]) }));
     expect(mocks.chat.mock.calls[0][0].messages[0].content).toMatch(/polite, warm, patient, respectful/i);
     expect(mocks.chat.mock.calls[0][0].messages[0].content).toMatch(/personal study companion/i);
+    expect(mocks.chat.mock.calls[0][0].messages[0].content).toContain('Student-Vault');
     expect(mocks.chat.mock.calls[0][0].messages.some((message: { content: string }) => message.content.includes('Student notes'))).toBe(false);
   });
 
