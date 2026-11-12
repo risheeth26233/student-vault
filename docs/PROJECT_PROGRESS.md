@@ -1,6 +1,14 @@
 # Student-Vault + GuruGraph Project Progress
 
-Last verified: 2026-11-06
+Last verified: 2026-11-12
+
+## Autonomous completion checkpoint — 2026-11-12
+
+- Configured the existing free Singapore Render service's `DATABASE_URL` through Render's secret environment-variable integration to the owner-approved, non-default Neon `student-vault-test` branch. The connection value was not printed or committed. Render deployed commit `0bd494c` and reported the service live. The service health-check setting is still blank, so this status does not verify database connectivity.
+- Confirmed the Neon branch remains isolated, ready, and scheduled to expire **2026-11-17 16:00 UTC**. It has the eight Phase 1/2 tables, no `_prisma_migrations` history, and no user/topic/resource records. The configured production branch was not contacted. No Neon migrations were applied.
+- The guarded baseline/migration still requires `DEMO_DATABASE_URL` in the ignored `backend/.env.demo.local`; that file is absent on this workstation. Do not infer that the Phase 4/5 schema exists remotely from the live health check. Use the documented baseline comparison and migration script before relying on teacher/intervention persistence.
+- Public browser verification opened the welcome page and showed the demo player/download link. Guest actions were initially disabled while Clerk initialized. Updated the guest entry path so local study tools remain available during Clerk startup; account buttons still wait for Clerk. Focused checks passed (**2 files / 4 tests**), and the full frontend suite passed (**37 files / 244 tests**). Frontend production build/typecheck and lint passed; lint retains existing React warnings. `git diff --check` passed. The public version still needs the new fix pushed and deployed.
+- Real Clerk student/teacher sign-in, webhook delivery, and AI/OCR provider requests remain unverified. Existing Clerk development app configuration and webhook setup are documented below; provider credentials and test accounts must be validated through actual requests before claiming those workflows complete.
 
 ## Public student release checkpoint — 2026-11-06
 

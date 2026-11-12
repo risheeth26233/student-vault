@@ -6,7 +6,7 @@ import { WelcomePage } from '../WelcomePage';
 
 const auth = vi.hoisted(() => ({ setProfile: vi.fn() }));
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ ...auth, user: null, isAuthenticated: true, isLoading: false }),
+  useAuth: () => ({ ...auth, user: null, isAuthenticated: true, isLoading: true }),
 }));
 
 afterEach(cleanup);

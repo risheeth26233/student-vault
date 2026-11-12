@@ -51,7 +51,7 @@ export function WelcomePage() {
             Your everyday study workspace. Keep track of classes, collect your notes, and turn “I don’t get it” into your next breakthrough.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button size="lg" disabled={isLoading} onClick={() => openWorkspace('/dashboard')}>Continue as guest</Button>
+            <Button size="lg" onClick={() => openWorkspace('/dashboard')}>Continue as guest</Button>
             <Button size="lg" variant="ghost" disabled={isLoading} onClick={() => void openAccount(true)}>Create a student account</Button>
           </div>
           <p className="mt-3 text-sm text-ink-muted">Guest notes and attendance stay in this browser.</p>
@@ -63,7 +63,7 @@ export function WelcomePage() {
         <div className="sv-tools-heading"><h2>Everything for your next study session.</h2><span>Pick a tool. Make a start.</span></div>
         <section aria-label="Student tools" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tools.map(({ icon: Icon, title, description, path }, index) => (
-            <button key={path} type="button" disabled={isLoading} onClick={() => openWorkspace(path)}
+            <button key={path} type="button" onClick={() => openWorkspace(path)}
               className="sv-study-tool rounded-2xl border border-border bg-white p-5 text-left focus-visible:outline-2 focus-visible:outline-teal-600">
               <span className="sv-tool-number" aria-hidden="true">0{index + 1} ↗</span>
               <Icon className="mb-3 h-6 w-6 text-teal-700" aria-hidden="true" />

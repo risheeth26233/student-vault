@@ -110,6 +110,7 @@ export function AuthProvider({ children, publishableKey }: { children: ReactNode
   const setProfile = useCallback((newProfile: UserProfile | null) => {
     setProfileState(newProfile);
     saveProfile(newProfile);
+    if (newProfile?.guest) setIsLoading(false);
   }, []);
 
   return (
