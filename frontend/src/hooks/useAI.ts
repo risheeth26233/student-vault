@@ -20,13 +20,18 @@ export function useAIProviders() {
   });
 }
 
-export function createSystemPrompt(subject?: string): AIMessage {
+export function createSystemPrompt(subject?: string, topic?: string): AIMessage {
   return {
     role: 'system',
-    content: `You are a helpful study assistant for students. ${
-      subject ? `The current subject is "${subject}". ` : ''
-    }Provide clear, concise explanations. Use examples when helpful. 
-    Encourage active learning by asking follow-up questions. Keep responses focused and practical.`,
+    content: [
+      'You are Student-Valut’s personal study companion for school and college learners.',
+      'Be polite, warm, patient, respectful, and natural. Never talk down to the student or sound judgmental.',
+      'Answer the student’s actual question first. Explain step by step when useful, adapt to the conversation, and keep the answer focused.',
+      'Use examples when they clarify an idea. Ask at most one short follow-up question, and only when it would help the student move forward.',
+      'Be honest about uncertainty. Do not claim to have read notes, documents, or websites unless their content was included in this conversation.',
+      subject ? `The selected subject is “${subject}”.` : '',
+      topic ? `The selected topic is “${topic}”.` : '',
+    ].filter(Boolean).join(' '),
   };
 }
 

@@ -34,7 +34,36 @@ describe('AIPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send question' }));
     await screen.findByText('Try a small example first.');
     expect(mocks.chat).toHaveBeenCalledWith(expect.objectContaining({ messages: expect.arrayContaining([expect.objectContaining({ role: 'user', content: 'Explain recursion' })]) }));
+    expect(mocks.chat.mock.calls[0][0].messages[0].content).toMatch(/polite, warm, patient, respectful/i);
+    expect(mocks.chat.mock.calls[0][0].messages[0].content).toMatch(/personal study companion/i);
     expect(mocks.chat.mock.calls[0][0].messages.some((message: { content: string }) => message.content.includes('Student notes'))).toBe(false);
+  });
+
+  it('reads an answer with the selected browser voice on request', async () => {
+    const voice = { name: 'Harry', lang: 'en-GB', voiceURI: 'harry-voice' } as SpeechSynthesisVoice;
+    const speech = { getVoices: () => [voice], addEventListener: vi.fn(), removeEventListener: vi.fn(), cancel: vi.fn(), speak: vi.fn() };
+    class MockUtterance {
+      text: string;
+      voice: SpeechSynthesisVoice | null = null;
+      lang = '';
+      rate = 1;
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor(text: string) { this.text = text; }
+    }
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: speech });
+    vi.stubGlobal('SpeechSynthesisUtterance', MockUtterance);
+    mocks.providers.mockResolvedValue({ providers: ['openai'], default: 'openai' });
+    mocks.chat.mockResolvedValue({ content: 'Let’s take it one step at a time.' });
+    render(<AIPage />);
+    await screen.findByText('Available providers: openai');
+    fireEvent.change(screen.getByLabelText('Your study question'), { target: { value: 'Help me understand this' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send question' }));
+    await screen.findByText('Let’s take it one step at a time.');
+    fireEvent.change(screen.getByLabelText('Read answers aloud'), { target: { value: voice.voiceURI } });
+    fireEvent.click(screen.getByRole('button', { name: 'Read aloud' }));
+    expect(speech.speak).toHaveBeenCalledOnce();
+    expect(speech.speak.mock.calls[0][0]).toMatchObject({ text: 'Let’s take it one step at a time.', voice, lang: 'en-GB', rate: 0.95 });
   });
 
   it('adds a requested AI answer without replacing the latest notes', async () => {

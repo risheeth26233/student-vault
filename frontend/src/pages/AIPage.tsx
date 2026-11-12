@@ -9,10 +9,11 @@ import { useAllTopics, useSaveTopicNotes } from '../hooks/useTopics';
 import { getTopic } from '../services/topicStore';
 import { useResources } from '../hooks/useResources';
 import { buildLocalPracticePrompt, buildOfflineStudyGuide } from '../features/ai/offlineStudyGuide';
+import { createSystemPrompt } from '../hooks/useAI';
 
 type Turn = { role: 'user' | 'assistant'; content: string; study?: AIStudyResponse; offline?: boolean };
-const systemMessage: AIMessage = { role: 'system', content: 'Help school and college students understand their questions. Give structured study notes with a clear explanation, key ideas, a worked example when useful, and a short self-check. Adapt the level to the student’s question. State uncertainty. Do not claim to have searched the web or read materials the user did not include.' };
 const MAX_SELECTED_DOCUMENTS = 4;
+const VOICE_PREFERENCE_KEY = 'sv_ai_read_aloud_voice';
 
 export function AIPage() {
   const [prompt, setPrompt] = useState('');
@@ -31,6 +32,11 @@ export function AIPage() {
   const saveTopicNotes = useSaveTopicNotes();
   const [saveStatus, setSaveStatus] = useState('');
   const [savedAnswers, setSavedAnswers] = useState<string[]>([]);
+  const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [speechVoiceURI, setSpeechVoiceURI] = useState(() => {
+    try { return localStorage.getItem(VOICE_PREFERENCE_KEY) ?? ''; } catch { return ''; }
+  });
+  const [readingTurn, setReadingTurn] = useState<number | null>(null);
   const savingAnswer = useRef(false);
   const selectedTopic = topicResult?.topics.find((topic) => topic.id === topicId);
   const { data: resourceResult, isPending: resourcesLoading } = useResources(topicId || undefined, Boolean(topicId));
@@ -41,6 +47,42 @@ export function AIPage() {
   const availableResourceIds = useMemo(() => new Set(topicResources.map((resource) => resource.id)), [topicResources]);
   const activeResourceIds = selectedResourceIds.filter((id) => availableResourceIds.has(id));
   const transcript = useRef<HTMLDivElement>(null);
+  const speechAvailable = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const availableSpeechVoiceURI = speechVoices.some((voice) => voice.voiceURI === speechVoiceURI) ? speechVoiceURI : '';
+
+  useEffect(() => {
+    if (!speechAvailable) return;
+    const loadVoices = () => setSpeechVoices(window.speechSynthesis.getVoices());
+    loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+  }, [speechAvailable]);
+
+  function chooseSpeechVoice(voiceURI: string) {
+    setSpeechVoiceURI(voiceURI);
+    try {
+      if (voiceURI) localStorage.setItem(VOICE_PREFERENCE_KEY, voiceURI);
+      else localStorage.removeItem(VOICE_PREFERENCE_KEY);
+    } catch { /* speech remains usable without saved preferences */ }
+  }
+
+  function readAnswer(index: number, content: string) {
+    if (!speechAvailable) return;
+    if (readingTurn === index) {
+      window.speechSynthesis.cancel();
+      setReadingTurn(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(content);
+    utterance.voice = speechVoices.find((voice) => voice.voiceURI === speechVoiceURI) ?? null;
+    utterance.lang = utterance.voice?.lang || navigator.language || 'en-US';
+    utterance.rate = 0.95;
+    utterance.onend = () => setReadingTurn(null);
+    utterance.onerror = () => setReadingTurn(null);
+    window.speechSynthesis.speak(utterance);
+    setReadingTurn(index);
+  }
 
   useEffect(() => {
     let active = true;
@@ -80,7 +122,7 @@ export function AIPage() {
       } else if (providers?.length === 0) {
         setTurns((current) => [...current, { role: 'assistant', content: buildOfflineStudyGuide(selectedTopic), offline: true }]);
       } else {
-        const messages: AIMessage[] = [systemMessage, ...updated.map((turn) => ({ role: turn.role, content: turn.content }))];
+        const messages: AIMessage[] = [createSystemPrompt(selectedTopic?.subject, selectedTopic?.title), ...updated.map((turn) => ({ role: turn.role, content: turn.content }))];
         const response = await aiApi.chat({ messages, maxTokens: 2400 });
         setTurns((current) => [...current, { role: 'assistant', content: response.content }]);
       }
@@ -114,8 +156,9 @@ export function AIPage() {
 
   return (
     <PageContainer><ContentWrapper className="sv-ai-workspace">
-      <header className="mb-5"><p className="text-sm font-semibold uppercase tracking-wide text-teal-700">AI Study</p><h1 className="mt-1 text-3xl font-bold text-ink">Study assistant</h1><p className="mt-2 max-w-3xl text-sm text-ink-muted">Ask for explanations or study help. Typed questions go to the configured provider. Selected PDFs are extracted on the Student-Vault server; their passages stay there by default. External document or image sharing requires the separate consent below.</p></header>
+      <header className="mb-5"><p className="text-sm font-semibold uppercase tracking-wide text-teal-700">AI Study</p><h1 className="mt-1 text-3xl font-bold text-ink">Your study companion</h1><p className="mt-2 max-w-3xl text-sm text-ink-muted">A polite, patient study partner that follows your conversation. Choose a topic or select course files for cited, document-grounded help. Your files stay on Student-Valut unless you allow provider sharing.</p></header>
       <div className="mb-4 flex items-center gap-3 rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-900"><Sparkles className="h-4 w-4" aria-hidden="true"/><span>{providers?.length ? `Available providers: ${providers.join(', ')}` : providerError ? 'Provider availability could not be checked.' : 'Checking configured providers…'}</span></div>
+      {speechAvailable && <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-ink-muted"><label htmlFor="study-voice">Read answers aloud<select id="study-voice" value={availableSpeechVoiceURI} onChange={(event) => chooseSpeechVoice(event.target.value)} className="ml-2 min-h-9 rounded-md border border-gray-300 bg-white px-2 text-ink"><option value="">Device default</option>{speechVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{/harry/i.test(voice.name) ? 'Harry · male' : /jenni|jenny/i.test(voice.name) ? 'Jenni · female' : `${voice.name}${voice.lang ? ` · ${voice.lang}` : ''}`}</option>)}</select></label><span>Uses voices available on this device; audio stays in your browser.</span></div>}
       {providers?.length === 0 && !providerError && <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">No AI chat provider is configured. Local document extraction and an offline study scaffold remain available.</p>}
 
       {selectedTopic && <Card elevation={1} padding="md">
@@ -140,6 +183,7 @@ export function AIPage() {
           {turns.map((turn, index) => <div key={`${index}-${turn.role}`} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-4 py-3 text-sm ${turn.role === 'user' ? 'ml-auto bg-teal-700 text-white' : 'bg-white text-ink shadow-sm'}`}>
             <p className="mb-1 text-xs font-semibold opacity-75">{turn.role === 'user' ? 'You' : turn.offline ? 'Local review guide' : turn.study?.mode === 'provider_grounded' ? `AI answer · retrieved evidence sent to ${turn.study.provider}` : turn.study ? 'Retrieved excerpts · no AI answer' : 'AI study notes · review before relying'}</p>
             <p>{turn.content}</p>
+            {turn.role === 'assistant' && !turn.offline && speechAvailable && <Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => readAnswer(index, turn.content)}>{readingTurn === index ? 'Stop reading' : 'Read aloud'}</Button>}
             {turn.role === 'assistant' && !turn.offline && (!turn.study || turn.study.mode === 'provider_grounded') && selectedTopic && (
               <Button size="sm" variant="outline" className="mt-3"
                 disabled={saveTopicNotes.isPending || savedAnswers.includes(`${selectedTopic.id}:${index}`)}
