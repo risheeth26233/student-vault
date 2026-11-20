@@ -24,10 +24,10 @@ const KIND_ICONS: Record<NotificationKind, React.ComponentType<{ className?: str
 };
 
 const KIND_COLORS: Record<NotificationKind, string> = {
-  info: 'text-blue-600 bg-blue-50',
-  success: 'text-teal-600 bg-teal-50',
-  warning: 'text-amber-600 bg-amber-50',
-  error: 'text-coral-600 bg-coral-50',
+  info: 'text-info-strong bg-info-soft',
+  success: 'text-success-strong bg-success-soft',
+  warning: 'text-warning-strong bg-warning-soft',
+  error: 'text-danger-strong bg-danger-soft',
 };
 
 function NotificationRow({
@@ -101,6 +101,8 @@ export function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -108,7 +110,10 @@ export function NotificationBell() {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) setOpen(false);
     };
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleKey);
@@ -118,6 +123,10 @@ export function NotificationBell() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (open) panelRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+  }, [open]);
+
   const handleOpen = (item: AppNotification) => {
     markRead(item.id);
     setOpen(false);
@@ -125,21 +134,24 @@ export function NotificationBell() {
   };
 
   return (
-    <div ref={containerRef} className="flex">
+    <div ref={containerRef} className="relative flex">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex p-2 rounded-lg text-ink-muted hover:bg-teal-50 hover:text-teal-700 transition-colors relative"
+        className="sv-notification-trigger relative flex h-10 w-10 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-teal-50 hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-        aria-haspopup="menu"
+        aria-controls="notifications-panel"
         aria-expanded={open}
         data-testid="notifications-bell"
       >
         <Bell className="w-5 h-5" aria-hidden="true" />
         {unread > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-coral-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+            key={`notifications-badge-${unread}`}
+            className="sv-notification-badge absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-teal-600 px-1 text-[10px] font-bold text-white ring-2 ring-surface"
             data-testid="notifications-badge"
+            aria-hidden="true"
           >
             {unread > 9 ? '9+' : unread}
           </span>
@@ -148,9 +160,11 @@ export function NotificationBell() {
 
       {open && (
         <div
-          role="menu"
+          ref={panelRef}
+          id="notifications-panel"
+          role="region"
           aria-label="Notifications"
-          className="absolute right-0 top-full mt-2 w-[19rem] max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-surface shadow-xl z-50"
+          className="sv-notification-panel absolute right-0 top-full z-[var(--z-popover)] mt-2 w-[21rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface shadow-3"
           data-testid="notifications-panel"
         >
           <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">

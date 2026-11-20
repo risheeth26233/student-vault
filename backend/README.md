@@ -106,6 +106,8 @@ For a new PostgreSQL database, generate Prisma Client and apply checked-in migra
 
 For an existing database created with `prisma db push` or another untracked setup, take a backup and verify it matches the initial schema before recording that baseline as applied with `npx prisma migrate resolve --applied 20261028120000_initial_schema`. Then run `npm run prisma:migrate:deploy`. Do not mark the baseline applied against an unverified schema.
 
+The additive `20261120120000_public_student_id` migration adds a nullable unique `users.publicId` column. Existing users receive an ID on their first authenticated profile request; no Clerk ID or personal data is used to derive it. Apply this reviewed migration with `npm run prisma:migrate:deploy` only after verifying the target database and taking the normal backup. Until applied, the profile API returns `503 id_setup_pending`; no production database was changed during this implementation.
+
 ## Teacher accounts
 
 Clerk account signup and signin are separate frontend actions; local guest profiles do not grant server access. The backend verifies bearer tokens with the configured Clerk instance and restricts authorized parties to the exact `FRONTEND_URL` origin. Only exact Clerk IDs in `TEACHER_CLERK_IDS` receive the teacher role. API callers cannot assign roles. Account persistence failures return a sanitized 503 rather than falsely reporting an expired token. Configure the primary Clerk email address and ensure display names fit the 40-character application limit.
@@ -117,6 +119,7 @@ Set `TEACHER_CLERK_IDS` to a comma-separated allowlist of Clerk user IDs. The ba
 ### Health
 - `GET /api/ready` - Database connectivity readiness (200/503, two-second response timeout, no credentials returned). Use alongside process liveness; migration/provider validation remains separate.
 - `GET /api/health` - Health check
+- `GET /api/profile/public-id` - Get or assign the stable public Student-Vault ID for the authenticated account
 
 ### Topics (Phase 1)
 - `GET /api/topics` - List all topics (with query: subject, status, search, limit, offset)

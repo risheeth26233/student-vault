@@ -1,6 +1,14 @@
 # Student-Vault + GuruGraph Project Progress
 
-Last verified: 2026-11-12
+Last verified: 2026-11-20
+
+## Profile and notification polish — 2026-11-20
+
+- Profile now requests a stable public Student-Vault ID from an authenticated backend endpoint. Clerk IDs remain internal to auth; IDs use cryptographic randomness and a database unique index, and existing accounts are assigned on first request. Guest accounts correctly have no cross-device ID. The additive migration is checked in but was not applied to any database; the endpoint gives a safe setup-pending response until it is deployed.
+- Notification badge and panel are brighter, semantic-colored, correctly anchored, and keyboard accessible (focus on open, Escape close and focus return). Color tokens were adjusted within the existing green identity. Profile content wraps at narrow widths and account ID/status states handle loading, guest, unavailable and copy flows.
+- Added focused profile, ID collision/authorization/migration-pending, and notification interaction tests. Prisma schema validation, backend tests (53 passed, 0 failed, 1 PostgreSQL integration skipped), backend typecheck/build, frontend lint/build, and the complete frontend suite (253 tests across 40 files) passed. Focused profile and notification tests also passed after the final copy-flow assertion. Frontend lint still reports repository-wide React warnings; backend lint reports two existing `any` warnings.
+- No PostgreSQL database was contacted for this change. Migration SQL and Prisma schema were inspected/validated, but the new migration is not applied or persistence-tested against a real database. Do not deploy database-dependent ID display until the migration is applied through a verified, backed-up target.
+- The deployed Render profile page was inspected read-only and still shows the pre-change profile with a raw Clerk ID. This revision has not been deployed, and browser visual verification of the updated page at the requested viewport matrix remains outstanding. Preserve the existing untracked `demo-video/` folder.
 
 ## Roadmap continuation checkpoint — 2026-11-12
 

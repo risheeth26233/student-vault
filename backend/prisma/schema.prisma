@@ -63,6 +63,7 @@ enum AssessmentType {
 model User {
   id            String    @id @default(cuid())
   clerkId       String    @unique // Clerk user ID
+  publicId      String?   @unique // Stable Student-Vault ID; assigned on first profile request
   email         String    @unique
   name          String    @db.VarChar(40)
   passwordHash  String?   // Nullable for OAuth-only accounts

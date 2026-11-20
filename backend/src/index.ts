@@ -27,6 +27,7 @@ import { importRoutes } from "./routes/import.js";
 import { clerkWebhookRoutes } from "./routes/clerk-webhook.js";
 import { syncRoutes } from "./routes/sync.js";
 import { teacherRoutes } from "./routes/teacher.js";
+import { profileRoutes } from "./routes/profile.js";
 import { prisma } from "./utils/prisma.js";
 import { registerFrontend } from "./routes/frontend.js";
 
@@ -89,6 +90,7 @@ await app.register(importRoutes);
 await app.register(clerkWebhookRoutes);
 await app.register(syncRoutes);
 await app.register(teacherRoutes);
+await app.register(profileRoutes);
 
 // Global error handler
 app.setErrorHandler<FastifyError>((error, request, reply) => {

@@ -103,6 +103,10 @@ export async function checkHealth() {
   return apiRequest<{ status: 'ok'; timestamp: string; uptime: number; version: string; environment: string }>('/health');
 }
 
+export const profileApi = {
+  publicId: () => apiRequest<{ publicId: string }>('/profile/public-id'),
+};
+
 /**
  * ==================== TOPICS API ====================
  */
