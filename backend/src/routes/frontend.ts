@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 
 const contentTypes: Record<string, string> = {
@@ -56,6 +56,14 @@ export async function registerFrontend(app: FastifyInstance, directory: string):
           .header("Content-Length", end - start + 1).send(createReadStream(file, { start, end }));
       }
       reply.header("Content-Length", size);
+    }
+    if (extension === ".html") {
+      let html = await readFile(file, "utf8");
+      const clerkKey = process.env.CLERK_PUBLISHABLE_KEY?.trim();
+      if (clerkKey && /^pk_(?:test|live)_[A-Za-z0-9_+./=-]+$/.test(clerkKey)) {
+        html = html.replace(/(<meta name="clerk-publishable-key" content=")[^"]*(")/, (_match, start: string, end: string) => `${start}${clerkKey}${end}`);
+      }
+      return reply.send(html);
     }
     return reply.send(createReadStream(file));
   });

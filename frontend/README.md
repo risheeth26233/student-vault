@@ -14,7 +14,7 @@ npm run build
 
 The dev server proxies `/api` to `http://localhost:3000`. Set `VITE_API_BASE` only when the backend uses another API origin.
 
-For a hosted Clerk sign-in, configure the public `VITE_CLERK_PUBLISHABLE_KEY` at build time. The combined Docker build takes it from `CLERK_PUBLISHABLE_KEY`; account secrets stay on the backend. The welcome screen separates real Clerk sign-in from a local guest workspace, which grants no cloud role. PWA assets and registration are scoped to `/app/` using VitePWA.
+For a hosted Clerk sign-in, configure `CLERK_PUBLISHABLE_KEY` in the combined service's runtime environment or provide `VITE_CLERK_PUBLISHABLE_KEY` at build time. The backend injects only a format-validated public publishable key into the SPA HTML; Clerk secret and webhook keys remain backend-only. The welcome screen separates real Clerk sign-in from a local guest workspace, which grants no cloud role. PWA assets and registration are scoped to `/app/` using VitePWA.
 
 The welcome screen provides separate account signin and student signup controls. Initialization is shared across React remounts, auth events are subscribed before initialization, and failed initialization is visible with reload guidance. Tokens are requested from the active Clerk session for each API call and are not cached in localStorage. A successful modal opening does not establish backend account provisioning or teacher authorization.
 

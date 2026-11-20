@@ -120,7 +120,7 @@ export function TeacherPage() {
 
   return (
     <PageContainer>
-      <ContentWrapper>
+      <ContentWrapper className="sv-teacher-workspace">
         <header className="mb-6">
           <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">Classroom workspace</p>
           <h1 className="mt-1 text-3xl font-bold text-ink">{studentMode ? 'Join a class' : 'Teacher intelligence'}</h1>

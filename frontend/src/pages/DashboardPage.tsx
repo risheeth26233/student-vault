@@ -15,15 +15,20 @@ import { PageContainer, Section, ContentWrapper } from '../components/layout/App
 import { 
   BookOpen, Calendar, FileText, Target, TrendingUp, 
   AlertTriangle, Clock, CheckCircle, ArrowRight,
-  LayoutDashboard, Plus, ClipboardList, NotebookPen, Video, Sparkles
+  LayoutDashboard, Plus, ClipboardList, NotebookPen, Video, Sparkles, Lightbulb
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, isBefore, addDays } from 'date-fns';
 import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useGuruGraphIntelligence } from '../gurugraph';
+import { buildInsightsViewModel, formatScorePercent } from '../features/insights/insightsViewModel';
+import { useHandwritingSubmissions } from '../hooks/useHandwriting';
+import { teacherApi } from '../services/api';
 import '../styles/dashboard.css';
 
 export function DashboardPage() {
-  const { isAuthenticated, isLoading, profile } = useAuth();
+  const { isAuthenticated, isLoading, profile, user } = useAuth();
   
   const { data: topicsData, isLoading: topicsLoading } = useTopics({ limit: 50 });
   const { data: attendanceData, isLoading: attendanceLoading } = useAttendanceStats();
@@ -32,6 +37,18 @@ export function DashboardPage() {
   const { data: assignmentsData, isLoading: assignmentsLoading } = useAssignments();
   // Loaded separately for the same reason — performance never blocks the shell.
   const { data: assessmentsData, isLoading: assessmentsLoading } = useAssessments();
+  const { data: handwritingData, isLoading: handwritingLoading } = useHandwritingSubmissions();
+  const interventionQuery = useQuery({
+    queryKey: ['student-interventions', 'dashboard'],
+    queryFn: () => teacherApi.myInterventions(),
+    enabled: isAuthenticated && !profile?.guest,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const { snapshot: intelligence, isLoading: insightsLoading, error: insightsError } = useGuruGraphIntelligence();
+  const insights = useMemo(() => buildInsightsViewModel(intelligence), [intelligence]);
+  const account = user as { firstName?: string; username?: string } | null;
+  const studentName = profile?.name || account?.firstName || account?.username || 'there';
 
   // Dashboard should be accessible to guests too (local mode)
   const topics = topicsData?.topics || [];
@@ -71,6 +88,12 @@ export function DashboardPage() {
     const openAssignments = sortAssignmentsByDueDate(
       (assignmentsData?.assignments ?? []).filter(item => item.status !== 'completed')
     ).slice(0, 4);
+    const recentPractice = [...(handwritingData ?? [])]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 3);
+    const activeInterventions = (interventionQuery.data?.interventions ?? [])
+      .filter(item => item.status === 'proposed' || item.status === 'approved' || item.status === 'in_progress')
+      .slice(0, 3);
 
     // Recent performance records (newest first) + simple mean percentage
     const allAssessments = assessmentsData?.assessments ?? [];
@@ -80,6 +103,16 @@ export function DashboardPage() {
           (allAssessments.reduce((sum, item) => sum + item.percentage, 0) / allAssessments.length) * 10
         ) / 10
       : 0;
+    const subjectTotals = new Map<string, { total: number; count: number }>();
+    for (const item of allAssessments) {
+      const current = subjectTotals.get(item.subject) ?? { total: 0, count: 0 };
+      subjectTotals.set(item.subject, { total: current.total + item.percentage, count: current.count + 1 });
+    }
+    const subjectPerformance = [...subjectTotals].map(([subject, item]) => ({
+      subject,
+      average: Math.round((item.total / item.count) * 10) / 10,
+      count: item.count,
+    })).sort((a, b) => a.subject.localeCompare(b.subject));
 
     return {
       totalTopics,
@@ -91,12 +124,15 @@ export function DashboardPage() {
       overdueExams,
       recentTopics,
       openAssignments,
+      recentPractice,
+      activeInterventions,
       recentAssessments,
       performanceTotal: allAssessments.length,
       performanceAverage,
+      subjectPerformance,
       attendance,
     };
-  }, [topics, resources, attendance, assignmentsData, assessmentsData]);
+  }, [topics, resources, attendance, assignmentsData, assessmentsData, handwritingData, interventionQuery.data]);
 
   if (!isAuthenticated && !isLoading && !profile?.guest) {
     return (
@@ -130,7 +166,7 @@ export function DashboardPage() {
     <PageContainer>
       <ContentWrapper className="sv-dashboard max-w-6xl space-y-6">
         <header className="sv-dashboard-heading">
-          <div><p className="sv-dashboard-kicker">YOUR STUDY SPACE</p><h1>Let’s make a little progress.</h1></div>
+          <div><p className="sv-dashboard-kicker">YOUR STUDY SPACE</p><h1>Welcome back, {studentName}.</h1><p className="mt-2 max-w-xl text-sm text-ink-muted">Here’s what you’ve recorded and a useful place to begin today.</p></div>
           <span>{format(new Date(), 'EEEE, d MMMM')}</span>
         </header>
         <section className="sv-dashboard-hero" aria-label="Today's study focus">
@@ -229,6 +265,21 @@ export function DashboardPage() {
               <p className="mt-4 text-sm text-ink-muted">{attendance.totalClasses} total classes recorded</p>
             </Card>
           </div>
+        </Section>
+
+        <Section title="GuruGraph learning insights" description="Read-only estimates from the records in your vault. Candidate gaps are prompts to review, not diagnoses." action={<Link to="/insights" className="text-sm font-semibold text-teal-700 hover:underline">Open insights <ArrowRight className="ml-1 inline h-4 w-4" aria-hidden="true" /></Link>}>
+          {insightsLoading ? (
+            <p role="status" className="sv-dashboard-status">Reviewing your recorded learning evidence…</p>
+          ) : insightsError ? (
+            <p className="sv-dashboard-status">Insights could not be refreshed. Your study records are still available.</p>
+          ) : !insights.hasAnyRecords ? (
+            <div className="sv-insight-empty"><Lightbulb size={20} aria-hidden="true" /><p>Add topics or assessment results to see learning insights based on your own records.</p><Link to="/vault">Add a topic <ArrowRight size={15} aria-hidden="true" /></Link></div>
+          ) : (
+            <div className="sv-insight-overview">
+              <div className="sv-insight-metrics"><div><strong>{insights.topicsWithEvidence}</strong><span>topics with measurable evidence</span></div><div><strong>{insights.potentialGapCount}</strong><span>potential gaps to review</span></div><div><strong>{insights.signals}</strong><span>recorded learning signals</span></div></div>
+              {insights.topicMastery.length > 0 && <div className="sv-insight-topics" aria-label="Topic mastery estimates">{insights.topicMastery.slice(0, 3).map(({ record, subjectLabel }) => <div key={record.key}><span><b>{record.label}</b><small>{subjectLabel} · {record.evidenceCount} {record.evidenceCount === 1 ? 'record' : 'records'}</small></span><strong>{record.score === null ? 'Not enough evidence' : formatScorePercent(record.score)}</strong></div>)}</div>}
+            </div>
+          )}
         </Section>
 
         {/* Upcoming Exams & Overdue */}
@@ -439,6 +490,7 @@ export function DashboardPage() {
                     {formatPercent(stats.performanceAverage)}
                   </span>
                 </Link>
+                {stats.subjectPerformance.length > 0 && <div className="sv-dashboard-subject-scores" aria-label="Assessment averages by subject">{stats.subjectPerformance.slice(0, 4).map(item => <div key={item.subject}><span><b>{item.subject}</b><small>{item.count} {item.count === 1 ? 'assessment' : 'assessments'}</small></span><strong>{formatPercent(item.average)}</strong></div>)}</div>}
                 {stats.recentAssessments.map(assessment => (
                   <Link
                     key={assessment.id}
@@ -466,6 +518,17 @@ export function DashboardPage() {
               </div>
             )}
           </Section>
+
+          <div className="sv-dashboard-workstreams" aria-label="Practice and teacher follow-up">
+            <section className="sv-dashboard-workstream" aria-labelledby="dashboard-practice-title">
+              <div className="sv-dashboard-workstream-heading"><div><p className="sv-dashboard-kicker">KEEP GOING</p><h2 id="dashboard-practice-title">Recent practice</h2></div><Link to="/handwriting">Open practice <ArrowRight size={15} aria-hidden="true" /></Link></div>
+              {handwritingLoading ? <p role="status" className="sv-dashboard-workstream-empty">Loading recent practice…</p> : stats.recentPractice.length ? <ul>{stats.recentPractice.map(item => <li key={item.id}><Link to={`/handwriting?topic=${encodeURIComponent(item.topicId)}`}><span><strong>{item.topicTitle}</strong><small>{item.subject} · {item.attempts.length} {item.attempts.length === 1 ? 'attempt' : 'attempts'}</small></span><Badge variant={item.status === 'evaluated' ? 'success' : item.status === 'extraction_failed' ? 'danger' : 'info'}>{item.status.replaceAll('_', ' ')}</Badge></Link></li>)}</ul> : <p className="sv-dashboard-workstream-empty">Your handwritten practice and reassessments will appear here when you save them.</p>}
+            </section>
+            <section className="sv-dashboard-workstream" aria-labelledby="dashboard-followup-title">
+              <div className="sv-dashboard-workstream-heading"><div><p className="sv-dashboard-kicker">SHARED WITH YOU</p><h2 id="dashboard-followup-title">Teacher follow-up</h2></div><Link to="/teacher">Open classes <ArrowRight size={15} aria-hidden="true" /></Link></div>
+              {profile?.guest ? <p className="sv-dashboard-workstream-empty">Sign in to see follow-up plans shared by your teachers. Your guest records stay on this device.</p> : interventionQuery.isLoading ? <p role="status" className="sv-dashboard-workstream-empty">Loading teacher follow-up…</p> : interventionQuery.isError ? <p role="alert" className="sv-dashboard-workstream-empty">Teacher follow-up couldn’t be loaded. Open classes to try again.</p> : stats.activeInterventions.length ? <ul>{stats.activeInterventions.map(item => <li key={item.id}><Link to="/teacher"><span><strong>{item.need}</strong><small>{item.topic ? `${item.topic.subject} · ${item.topic.title}` : item.classroom?.name ?? 'Class follow-up'}</small></span><Badge variant={item.status === 'in_progress' ? 'warning' : 'info'}>{item.status.replaceAll('_', ' ')}</Badge></Link></li>)}</ul> : <p className="sv-dashboard-workstream-empty">Teacher follow-up plans will appear here when a teacher shares one with you.</p>}
+            </section>
+          </div>
 
 
         </div>

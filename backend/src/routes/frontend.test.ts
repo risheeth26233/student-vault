@@ -12,7 +12,7 @@ test("release serves modern SPA publicly while APIs and private files remain pro
   const app = Fastify();
   try {
     await mkdir(join(root, "assets"));
-    await writeFile(join(root, "index.html"), "<!doctype html><title>Student Vault</title>");
+    await writeFile(join(root, "index.html"), '<!doctype html><meta name="clerk-publishable-key" content=""><title>Student Vault</title>');
     await writeFile(join(root, "assets", "index-12345678.js"), "export {};");
     await writeFile(join(root, ".env"), "secret");
     await writeFile(join(root, "bundle.js.map"), "private source");
@@ -28,6 +28,16 @@ test("release serves modern SPA publicly while APIs and private files remain pro
       assert.equal(response.statusCode, 200);
       assert.match(String(response.headers["content-type"]), /text\/html/);
       assert.equal(response.headers["cache-control"], "no-cache");
+    }
+    const previousClerkKey = process.env.CLERK_PUBLISHABLE_KEY;
+    try {
+      process.env.CLERK_PUBLISHABLE_KEY = "pk_test_student-vault";
+      assert.match((await app.inject("/app/")).body, /content="pk_test_student-vault"/);
+      process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_" onload="alert(1)';
+      assert.match((await app.inject("/app/")).body, /content=""/);
+    } finally {
+      if (previousClerkKey === undefined) delete process.env.CLERK_PUBLISHABLE_KEY;
+      else process.env.CLERK_PUBLISHABLE_KEY = previousClerkKey;
     }
     const asset = await app.inject("/app/assets/index-12345678.js");
     assert.equal(asset.statusCode, 200);

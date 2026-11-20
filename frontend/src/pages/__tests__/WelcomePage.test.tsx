@@ -23,3 +23,13 @@ it('opens the selected guest tool without redirecting to the dashboard', async (
   expect(await screen.findByRole('heading', { name: 'Attendance tool' })).toBeTruthy();
   expect(auth.setProfile).toHaveBeenCalledWith({ name: 'Guest', guest: true });
 });
+
+it('explains the student and teacher journeys and keeps account actions visible', () => {
+  render(<MemoryRouter><Routes><Route path="/" element={<WelcomePage />} /></Routes></MemoryRouter>);
+  expect(screen.getByRole('heading', { name: /Your studies/ })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: /From a question to a next step/ })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: /Make room for the way you learn/ })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: /Turn shared evidence into follow-up/ })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Create a student account' })).toBeTruthy();
+});

@@ -157,10 +157,10 @@ if (typeof document !== 'undefined') {
   const style = document.createElement('style');
   style.textContent = `
     @keyframes slide-in {
-      from { opacity: 0; transform: translateX(100%); }
-      to { opacity: 1; transform: translateX(0); }
+      from { opacity: 0; transform: translate3d(20px, 8px, 0) scale(.97); filter: blur(3px); }
+      to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
     }
-    .animate-slide-in { animation: slide-in 200ms ease-out; }
+    .animate-slide-in { animation: slide-in 260ms cubic-bezier(.22,1,.36,1) both; }
   `;
   document.head.appendChild(style);
 }
